@@ -1,5 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
+import { connection } from "next/server";
 import { Suspense } from "react";
 import { PublicHeader } from "@/components/public-frame";
 import { listPublicCatalog } from "@/lib/queries";
@@ -25,6 +26,7 @@ function OfferList({ items, empty }: { items: Offer[]; empty: string }) {
 }
 
 async function PublicCatalog() {
+  await connection();
   const catalog = await listPublicCatalog();
   return (
     <section className="mt-14 grid gap-4 lg:grid-cols-2">
