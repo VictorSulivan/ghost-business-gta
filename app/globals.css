@@ -1,0 +1,79 @@
+@import "tailwindcss";
+
+:root {
+  --background: #07060e;
+  --foreground: #f5f3fb;
+  --muted: #b3a6cc;
+  --line: #6d4cae;
+  --card: #110b1a;
+  --accent: #c084fc;
+  --danger: #f0a0c0;
+  --ok: #c4b5fd;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-muted: var(--muted);
+  --color-line: var(--line);
+  --color-card: var(--card);
+  --color-accent: var(--accent);
+  --color-danger: var(--danger);
+  --color-ok: var(--ok);
+  --font-sans: var(--font-geist-sans);
+  --font-serif: var(--font-serif);
+}
+
+body {
+  background:
+    radial-gradient(900px 420px at 50% -8%, rgba(138, 72, 255, 0.28), transparent 62%),
+    radial-gradient(520px 320px at 100% 8%, rgba(88, 28, 170, 0.2), transparent 55%),
+    radial-gradient(480px 280px at 0% 30%, rgba(70, 20, 140, 0.16), transparent 50%),
+    var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans), sans-serif;
+}
+
+h1,
+h2,
+h3 {
+  font-family: var(--font-serif), Georgia, serif;
+}
+
+input,
+textarea,
+select {
+  width: 100%;
+  border-radius: 0.7rem;
+  border: 1px solid color-mix(in srgb, var(--accent) 45%, #1a1028);
+  background: rgba(8, 6, 16, 0.85);
+  color: var(--foreground);
+  padding: 0.65rem 0.8rem;
+}
+
+input:focus,
+textarea:focus,
+select:focus {
+  outline: 2px solid color-mix(in srgb, var(--accent) 75%, white);
+  outline-offset: 1px;
+}
+
+textarea {
+  resize: vertical;
+}
+
+.ghost-panel {
+  border: 1px solid color-mix(in srgb, var(--accent) 55%, transparent);
+  background:
+    linear-gradient(180deg, rgba(88, 40, 150, 0.18), rgba(12, 8, 22, 0.92));
+  box-shadow:
+    0 0 0 1px rgba(18, 8, 32, 0.8) inset,
+    0 0 28px rgba(124, 58, 237, 0.16);
+}
+
+.metal {
+  background: linear-gradient(180deg, #ffffff 0%, #d9d4e8 42%, #8d86a8 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
