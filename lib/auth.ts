@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 import { cache } from "react";
 import { db } from "./db";
 import { users } from "./db/schema";
-import { decrypt, encrypt, isStaff, type Role, type SessionPayload } from "./session";
+import { canManageGrades, decrypt, encrypt, isStaff, type Role, type SessionPayload } from "./session";
 
 const COOKIE = "session";
 
@@ -70,5 +70,12 @@ export async function requireAdmin() {
   const user = await getCurrentUser();
   if (!user) endSession();
   if (user.role !== "admin") redirect(user.role === "client" ? "/espace" : "/bureau");
+  return user;
+}
+
+export async function requireGradeManager() {
+  const user = await getCurrentUser();
+  if (!user) endSession();
+  if (!canManageGrades(user.role)) redirect(user.role === "client" ? "/espace" : "/bureau");
   return user;
 }

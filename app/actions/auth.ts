@@ -8,6 +8,7 @@ import { createSession, deleteSession, getCurrentUser } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { users } from "@/lib/db/schema";
 import { isEmail, readString, type ActionState } from "@/lib/format";
+import { assignableRoles, type Role } from "@/lib/session";
 
 export async function login(_state: ActionState, formData: FormData): Promise<ActionState> {
   const email = readString(formData, "email").toLowerCase();
@@ -36,19 +37,20 @@ export async function logout() {
 
 export async function updateMemberAccess(_state: ActionState, formData: FormData): Promise<ActionState> {
   const actor = await getCurrentUser();
-  if (!actor || actor.role !== "admin") {
-    return { error: "Seul l'administrateur peut modifier un accès." };
-  }
+  if (!actor) return { error: "Connexion requise." };
 
   const id = readString(formData, "id");
-  const active = readString(formData, "active") === "yes";
   const role = readString(formData, "role");
-  if (role !== "client" && role !== "member") return { error: "Rôle invalide." };
-
   const account = await db.query.users.findFirst({ where: eq(users.id, id) });
   if (!account || account.role === "admin") return { error: "Compte introuvable." };
 
-  await db.update(users).set({ active, role }).where(eq(users.id, id));
+  const allowed = assignableRoles(actor.role, account.role);
+  if (!allowed.includes(role as Role)) return { error: "Ce grade ne peut pas être attribué." };
+
+  const next: { role: Role; active?: boolean } = { role: role as Role };
+  if (actor.role === "admin") next.active = readString(formData, "active") === "yes";
+
+  await db.update(users).set(next).where(eq(users.id, id));
   revalidatePath("/bureau/membres");
   return { ok: "Accès mis à jour." };
 }

@@ -47,6 +47,32 @@ export async function getRequestDetail(id: string) {
   });
 }
 
+export async function listPublicCatalog() {
+  const [serviceRows, staffRows, equipmentRows] = await Promise.all([
+    db.query.services.findMany({
+      where: eq(services.active, true),
+      columns: { id: true, name: true, description: true },
+      orderBy: [asc(services.name)],
+    }),
+    db.query.staff.findMany({
+      where: eq(staff.active, true),
+      columns: { id: true, name: true, notes: true },
+      orderBy: [asc(staff.name)],
+    }),
+    db.query.equipment.findMany({
+      where: eq(equipment.active, true),
+      columns: { id: true, name: true, notes: true },
+      orderBy: [asc(equipment.name)],
+    }),
+  ]);
+
+  return {
+    services: serviceRows.map((item) => ({ id: item.id, name: item.name, detail: item.description })),
+    staff: staffRows.map((item) => ({ id: item.id, name: item.name, detail: item.notes })),
+    equipment: equipmentRows.map((item) => ({ id: item.id, name: item.name, detail: item.notes })),
+  };
+}
+
 export async function listServices() {
   return db.query.services.findMany({
     orderBy: [asc(services.name)],

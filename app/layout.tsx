@@ -16,6 +16,10 @@ const serif = Cinzel({
 export const metadata: Metadata = {
   title: "Ghost — Division 01",
   description: "Ghost, division 01. Protection et sécurité. Votre sécurité est notre mission.",
+  icons: {
+    icon: [{ url: "/logo_ghost.png", type: "image/png" }],
+    apple: "/logo_ghost.png",
+  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

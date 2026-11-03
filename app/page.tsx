@@ -1,54 +1,48 @@
+import Image from "next/image";
 import Link from "next/link";
+import { Suspense } from "react";
 import { PublicHeader } from "@/components/public-frame";
+import { listPublicCatalog } from "@/lib/queries";
 
 const valuesLeft = ["Personnes", "Biens", "Événements", "Entreprises"];
 const valuesRight = ["Discrétion", "Professionnalisme", "Réactivité", "Protection"];
 const verbs = ["Protéger", "Anticiper", "Garantir"];
 
-const services = [
-  ["Protection rapprochée individuelle", "75 000 $ / heure"],
-  ["Protection VIP", "250 000 $ / jour"],
-  ["Sécurité d'entreprise", "100 000 $ / heure"],
-  ["Sécurisation d'événement privé", "150 000 $ / événement"],
-  ["Sécurisation d'événement majeur", "300 000 $ / événement"],
-  ["Escorte de véhicule", "100 000 $ / trajet"],
-  ["Protection de convoi", "150 000 $ / convoi"],
-  ["Surveillance de propriété", "75 000 $ / heure"],
-  ["Protection permanente", "Sur devis"],
-];
+type Offer = { id: string; name: string; detail: string };
 
-const staff = [
-  ["Agent opérationnel sur zone", "25 000 $"],
-  ["Agent spécialisé", "40 000 $"],
-  ["Chef d'équipe opérationnel", "50 000 $"],
-  ["Agent de soutien hors zone", "15 000 $"],
-];
-
-const gear = [
-  ["Véhicule de service", "15 000 $"],
-  ["Véhicule blindé", "50 000 $"],
-  ["Véhicule de transport tactique", "35 000 $"],
-  ["Hélicoptère", "100 000 $"],
-  ["Drone de reconnaissance", "20 000 $"],
-  ["Équipement spécialisé", "Sur devis"],
-];
-
-const adjustments = [
-  ["Danger élevé", "+30 %"],
-  ["Danger extrême", "+50 %"],
-  ["Paiement en argent sale (RP)", "+25 %"],
-];
-
-function RateList({ rows }: { rows: string[][] }) {
+function OfferList({ items, empty }: { items: Offer[]; empty: string }) {
+  if (items.length === 0) return <p className="mt-4 text-sm text-muted">{empty}</p>;
   return (
     <ul className="mt-4 divide-y divide-accent/20">
-      {rows.map(([label, price]) => (
-        <li key={label} className="flex items-baseline justify-between gap-4 py-2.5 text-sm">
-          <span>{label}</span>
-          <span className="shrink-0 text-accent">{price}</span>
+      {items.map((item) => (
+        <li key={item.id} className="py-2.5 text-sm">
+          <p>{item.name}</p>
+          {item.detail ? <p className="mt-1 text-muted">{item.detail}</p> : null}
         </li>
       ))}
     </ul>
+  );
+}
+
+async function PublicCatalog() {
+  const catalog = await listPublicCatalog();
+  return (
+    <section className="mt-14 grid gap-4 lg:grid-cols-2">
+      <article className="ghost-panel rounded-3xl p-6">
+        <h2 className="text-sm uppercase tracking-[0.22em] text-accent">Prestations</h2>
+        <OfferList items={catalog.services} empty="Aucune prestation pour le moment." />
+      </article>
+      <div className="grid gap-4">
+        <article className="ghost-panel rounded-3xl p-6">
+          <h2 className="text-sm uppercase tracking-[0.22em] text-accent">Effectifs</h2>
+          <OfferList items={catalog.staff} empty="Aucun effectif pour le moment." />
+        </article>
+        <article className="ghost-panel rounded-3xl p-6">
+          <h2 className="text-sm uppercase tracking-[0.22em] text-accent">Matériel</h2>
+          <OfferList items={catalog.equipment} empty="Aucun matériel pour le moment." />
+        </article>
+      </div>
+    </section>
   );
 }
 
@@ -66,12 +60,14 @@ export default function Home() {
           </ul>
 
           <div className="text-center">
-            <div className="mx-auto mb-6 grid h-28 w-28 place-items-center rounded-full border border-accent/70 shadow-[0_0_32px_rgba(168,85,247,0.35)]">
-              <span className="font-serif text-xs tracking-[0.22em]">
-                GHOST
-                <span className="mt-1 block text-[9px] tracking-[0.18em] text-accent">SPECIAL OPERATIONS</span>
-              </span>
-            </div>
+            <Image
+              src="/logo_ghost.png"
+              alt="Ghost — Special Operations"
+              width={1254}
+              height={1254}
+              priority
+              className="mx-auto mb-6 h-56 w-56 object-contain mix-blend-screen sm:h-72 sm:w-72"
+            />
             <h1 className="metal font-serif text-6xl tracking-[0.18em] sm:text-8xl">GHOST</h1>
             <p className="mt-3 text-xs uppercase tracking-[0.28em] text-muted sm:text-sm">
               Division 01 — Protection &amp; sécurité
@@ -101,33 +97,9 @@ export default function Home() {
           ))}
         </ul>
 
-        <section className="mt-14 grid gap-4 lg:grid-cols-2">
-          <article className="ghost-panel rounded-3xl p-6">
-            <h2 className="text-sm uppercase tracking-[0.22em] text-accent">Services &amp; tarifs de référence</h2>
-            <RateList rows={services} />
-          </article>
-          <div className="grid gap-4">
-            <article className="ghost-panel rounded-3xl p-6">
-              <h2 className="text-sm uppercase tracking-[0.22em] text-accent">Effectifs déployés</h2>
-              <RateList rows={staff} />
-            </article>
-            <article className="ghost-panel rounded-3xl p-6">
-              <h2 className="text-sm uppercase tracking-[0.22em] text-accent">Matériel déployé</h2>
-              <RateList rows={gear} />
-            </article>
-          </div>
-          <article className="ghost-panel rounded-3xl p-6">
-            <h2 className="text-sm uppercase tracking-[0.22em] text-accent">Ajustements</h2>
-            <RateList rows={adjustments} />
-          </article>
-          <article className="ghost-panel flex flex-col justify-center rounded-3xl p-6">
-            <p className="text-xs uppercase tracking-[0.22em] text-accent">Protéger · Anticiper · Garantir</p>
-            <p className="mt-4 text-muted">
-              Le détail d&apos;une mission se règle en privé. Le client ouvre une demande, le commandement répond,
-              puis un devis est établi.
-            </p>
-          </article>
-        </section>
+        <Suspense fallback={<p className="mt-14 text-sm text-muted">Chargement du catalogue…</p>}>
+          <PublicCatalog />
+        </Suspense>
 
         <section className="ghost-panel mt-4 rounded-3xl px-6 py-8 text-center">
           <p className="text-sm uppercase tracking-[0.16em]">

@@ -1,4 +1,5 @@
 import { requireStaff } from "@/lib/auth";
+import { canManageGrades } from "@/lib/session";
 import { AppShell } from "./app-shell";
 
 export async function BureauShell({ children }: { children: React.ReactNode }) {
@@ -6,7 +7,7 @@ export async function BureauShell({ children }: { children: React.ReactNode }) {
   const links = [
     { href: "/bureau", label: "Discussions" },
     { href: "/bureau/catalogue", label: "Catalogue" },
-    ...(user.role === "admin" ? [{ href: "/bureau/membres", label: "Membres" }] : []),
+    ...(canManageGrades(user.role) ? [{ href: "/bureau/membres", label: "Membres" }] : []),
   ];
   return (
     <AppShell links={links} characterName={user.profile?.characterName ?? "Membre"}>

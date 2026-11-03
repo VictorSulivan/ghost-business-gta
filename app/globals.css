@@ -62,6 +62,16 @@ textarea {
   resize: vertical;
 }
 
+input[type="checkbox"],
+input[type="radio"],
+input[type="range"] {
+  width: auto;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  accent-color: #f4f4f5;
+}
+
 .ghost-panel {
   border: 1px solid color-mix(in srgb, var(--accent) 55%, transparent);
   background:

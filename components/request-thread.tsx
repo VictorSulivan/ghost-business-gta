@@ -1,34 +1,34 @@
-import {
-  AcceptQuoteButton,
-  PrepareQuoteButton,
-  QuoteLineForm,
-  RefuseQuoteButton,
-  RemoveLineButton,
-  SendQuoteForm,
-} from "@/components/quote-forms";
+import { QuoteComposer, QuoteFigures } from "@/components/quote-composer";
+import { AcceptQuoteButton, PrepareQuoteButton, RefuseQuoteButton } from "@/components/quote-forms";
 import {
   CancelRequestButton,
   MarkDoneButton,
   MessageForm,
   RefuseRequestButton,
 } from "@/components/request-forms";
-import {
-  adjustmentLabel,
-  formatDate,
-  formatMoney,
-  formatPercent,
-  isClosedRequest,
-  quoteStatusLabel,
-  requestStatusLabel,
-} from "@/lib/format";
+import { roleLabel } from "@/lib/session";
+import { formatDate, isClosedRequest, quoteStatusLabel, requestStatusLabel } from "@/lib/format";
 import type { getRequestDetail } from "@/lib/queries";
 import { StatusBadge } from "./ui";
 
 type RequestDetail = NonNullable<Awaited<ReturnType<typeof getRequestDetail>>>;
 type ViewerRole = "client" | "member";
 
-function lineTotal(quantity: number, unitPriceCents: number) {
-  return quantity * unitPriceCents;
+function quoteFigures(quote: RequestDetail["quotes"][number]) {
+  const sum = (kind: string) =>
+    quote.lines.filter((line) => line.kind === kind).reduce((total, line) => total + line.quantity * line.unitPriceCents, 0);
+  const serviceCents = sum("service") + sum("custom");
+  const staffCents = sum("staff");
+  const equipmentCents = sum("equipment");
+  const lineSum = serviceCents + staffCents + equipmentCents;
+  const totalCents = quote.totalCents || lineSum;
+  return {
+    serviceCents,
+    staffCents,
+    equipmentCents,
+    surchargeCents: totalCents - lineSum,
+    totalCents,
+  };
 }
 
 export function RequestThread({
@@ -90,7 +90,7 @@ export function RequestThread({
         <ol className="grid gap-3">
           {request.messages.map((message) => {
             const mine = message.authorId === viewerId;
-            const name = message.author.profile?.characterName ?? (message.author.role === "member" ? "Membre" : "Client");
+            const name = message.author.profile?.characterName ?? roleLabel(message.author.role);
             return (
               <li
                 key={message.id}
@@ -98,7 +98,7 @@ export function RequestThread({
               >
                 <p className="text-sm text-accent">
                   {name}
-                  <span className="text-muted"> · {message.author.role === "member" ? "membre" : "client"}</span>
+                  <span className="text-muted"> · {roleLabel(message.author.role).toLowerCase()}</span>
                 </p>
                 <p className="mt-2 whitespace-pre-wrap">{message.body}</p>
                 <p className="mt-2 text-xs text-muted">{formatDate(message.createdAt)}</p>
@@ -113,7 +113,6 @@ export function RequestThread({
         <h2 className="font-serif text-2xl">Devis</h2>
         {quotes.length === 0 ? <p className="text-muted">Aucun devis pour le moment.</p> : null}
         {quotes.map((quote) => {
-          const total = quote.lines.reduce((sum, line) => sum + lineTotal(line.quantity, line.unitPriceCents), 0);
           return (
             <article key={quote.id} className="grid gap-4 ghost-panel rounded-3xl p-5">
               <div className="flex flex-wrap items-center justify-between gap-3">
@@ -122,49 +121,24 @@ export function RequestThread({
                 </p>
                 <StatusBadge label={quoteStatusLabel[quote.status]} />
               </div>
-              {quote.lines.length === 0 ? <p className="text-sm text-muted">Aucune ligne.</p> : null}
-              <ul className="grid gap-2">
-                {quote.lines.map((line) => (
-                  <li key={line.id} className="flex flex-wrap items-center justify-between gap-3 text-sm">
-                    <span>
-                      {line.label}
-                    </span>
-                    <span className="flex items-center gap-4">
-                      {formatMoney(lineTotal(line.quantity, line.unitPriceCents))}
-                      {quote.status === "draft" ? <RemoveLineButton lineId={line.id} /> : null}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-              <div className="grid justify-items-end gap-1 text-sm">
-                {quote.adjustment === "none" ? (
-                  <p className="font-semibold">
-                    {quote.status === "draft" ? "Sous-total" : "Total"}{" "}
-                    {formatMoney(quote.status === "draft" ? total : quote.totalCents || total)}
-                  </p>
-                ) : (
-                  <>
-                    <p className="text-muted">Sous-total {formatMoney(total)}</p>
-                    <p>
-                      {adjustmentLabel[quote.adjustment]} {formatPercent(quote.adjustmentBps)}
-                      {quote.adjustmentReason ? <span className="text-muted"> — {quote.adjustmentReason}</span> : null}
-                    </p>
-                    <p className="font-semibold">Total {formatMoney(quote.totalCents || total)}</p>
-                  </>
-                )}
-              </div>
-              {quote.note ? <p className="whitespace-pre-wrap text-sm text-muted">{quote.note}</p> : null}
               {role === "member" && quote.status === "draft" ? (
+                <QuoteComposer
+                  key={`${quote.id}-${quote.lines.map((line) => `${line.id}:${line.quantity}`).join("|")}-${quote.adjustmentBps}-${quote.note}`}
+                  quoteId={quote.id}
+                  note={quote.note}
+                  services={services}
+                  staffItems={staffItems}
+                  equipmentItems={equipmentItems}
+                  lines={quote.lines}
+                  adjustmentReason={quote.adjustmentReason}
+                />
+              ) : (
                 <>
-                  <QuoteLineForm
-                    quoteId={quote.id}
-                    services={services}
-                    staffItems={staffItems}
-                    equipmentItems={equipmentItems}
-                  />
-                  <SendQuoteForm quoteId={quote.id} note={quote.note} subtotalCents={total} />
+                  <QuoteFigures {...quoteFigures(quote)} />
+                  {quote.adjustmentReason ? <p className="text-sm text-muted">{quote.adjustmentReason}</p> : null}
+                  {quote.note ? <p className="whitespace-pre-wrap text-sm text-muted">{quote.note}</p> : null}
                 </>
-              ) : null}
+              )}
               {role === "client" && quote.status === "sent" ? (
                 <div className="flex flex-wrap gap-3">
                   <AcceptQuoteButton quoteId={quote.id} />

@@ -4,6 +4,7 @@ import { and, eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth";
+import { isStaff } from "@/lib/session";
 import { db } from "@/lib/db";
 import { messages, profiles, quotes, requests } from "@/lib/db/schema";
 import { isClosedRequest, readString, type ActionState } from "@/lib/format";
@@ -94,7 +95,7 @@ export async function sendMessage(_state: ActionState, formData: FormData): Prom
   if (user.role === "client" && request.clientId !== user.id) {
     return { error: "Cette demande ne vous appartient pas." };
   }
-  if (user.role !== "client" && user.role !== "member" && user.role !== "admin") {
+  if (user.role !== "client" && !isStaff(user.role)) {
     return { error: "Connexion requise." };
   }
   if (isClosedRequest(request.status)) {
@@ -146,7 +147,7 @@ export async function markDone(_state: ActionState, formData: FormData): Promise
   if (user.role === "client" && request.clientId !== user.id) {
     return { error: "Cette demande ne vous appartient pas." };
   }
-  if (user.role !== "client" && user.role !== "member" && user.role !== "admin") {
+  if (user.role !== "client" && !isStaff(user.role)) {
     return { error: "Connexion requise." };
   }
   if (request.status !== "accepted") {

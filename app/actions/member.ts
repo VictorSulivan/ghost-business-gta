@@ -1,8 +1,9 @@
 "use server";
 
-import { and, eq, ne } from "drizzle-orm";
+import { and, eq, inArray, ne } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { getCurrentUser } from "@/lib/auth";
+import { isStaff } from "@/lib/session";
 import { db } from "@/lib/db";
 import { equipment, quoteLines, quotes, requests, services, staff } from "@/lib/db/schema";
 import {
@@ -14,8 +15,10 @@ import {
   type QuoteAdjustment,
   type ActionState,
 } from "@/lib/format";
+import { dangerLevels, quoteEstimate, surchargeBps, surchargeOptions, surchargeReason } from "@/lib/quote-estimate";
 
 function refreshCatalog() {
+  revalidatePath("/");
   revalidatePath("/bureau/catalogue");
   revalidatePath("/bureau/demandes", "layout");
 }
@@ -31,7 +34,7 @@ function refreshRequest(id: string) {
 
 async function requireMember() {
   const user = await getCurrentUser();
-  if (!user || (user.role !== "member" && user.role !== "admin")) return null;
+  if (!user || !isStaff(user.role)) return null;
   return user;
 }
 
@@ -281,6 +284,119 @@ export async function removeQuoteLine(_state: ActionState, formData: FormData): 
   await db.delete(quoteLines).where(eq(quoteLines.id, lineId));
   refreshRequest(line.quote.requestId);
   return { ok: "Ligne retirée." };
+}
+
+function uniqueIds(formData: FormData, key: string) {
+  return [...new Set(formData.getAll(key).filter((value): value is string => typeof value === "string" && value.length > 0))];
+}
+
+export async function saveQuoteComposition(_state: ActionState, formData: FormData): Promise<ActionState> {
+  const member = await requireMember();
+  if (!member) return { error: "Connexion membre requise." };
+
+  const quoteId = readString(formData, "quoteId");
+  const note = readString(formData, "note");
+  const intent = readString(formData, "intent");
+  const danger = readString(formData, "danger");
+  if (intent !== "save" && intent !== "send") return { error: "Action inconnue." };
+  if (note.length > 2000) return { error: "La note est limitée à 2000 caractères." };
+  if (!dangerLevels.some((level) => level.id === danger)) return { error: "Choisissez un niveau de dangerosité." };
+
+  const extras = formData.getAll("extra").filter((value): value is string => typeof value === "string");
+  if (extras.some((id) => !surchargeOptions.some((option) => option.id === id))) {
+    return { error: "Une majoration est inconnue." };
+  }
+
+  const quote = await db.query.quotes.findFirst({
+    where: eq(quotes.id, quoteId),
+    with: { request: true },
+  });
+  if (!quote || quote.status !== "draft") return { error: "Ce devis n'est plus un brouillon." };
+  if (isClosedRequest(quote.request.status) || quote.request.status === "accepted") {
+    return { error: "Cette demande n'accepte plus de devis." };
+  }
+
+  const serviceIds = uniqueIds(formData, "serviceId");
+  const staffIds = uniqueIds(formData, "staffId");
+  const equipmentIds = uniqueIds(formData, "equipmentId");
+  const serviceRows = serviceIds.length
+    ? await db.query.services.findMany({ where: inArray(services.id, serviceIds) })
+    : [];
+  const staffRows = staffIds.length ? await db.query.staff.findMany({ where: inArray(staff.id, staffIds) }) : [];
+  const equipmentRows = equipmentIds.length
+    ? await db.query.equipment.findMany({ where: inArray(equipment.id, equipmentIds) })
+    : [];
+  if (serviceRows.length !== serviceIds.length || serviceRows.some((item) => !item.active)) {
+    return { error: "Une prestation n'est plus au catalogue." };
+  }
+  if (staffRows.length !== staffIds.length || staffRows.some((item) => !item.active)) {
+    return { error: "Un effectif n'est plus au catalogue." };
+  }
+  if (equipmentRows.length !== equipmentIds.length || equipmentRows.some((item) => !item.active)) {
+    return { error: "Un matériel n'est plus au catalogue." };
+  }
+
+  if (intent === "send" && serviceRows.length + equipmentRows.length + staffRows.length === 0) {
+    return { error: "Choisissez au moins une mission, un effectif ou un matériel." };
+  }
+
+  const serviceCents = serviceRows.reduce((sum, item) => sum + item.basePriceCents, 0);
+  const staffCents = staffRows.reduce((sum, item) => sum + item.priceCents, 0);
+  const equipmentCents = equipmentRows.reduce((sum, item) => sum + item.priceCents, 0);
+  const bps = surchargeBps(danger, extras);
+  const { totalCents } = quoteEstimate(serviceCents, staffCents, equipmentCents, bps);
+
+  await db.transaction(async (tx) => {
+    await tx.delete(quoteLines).where(eq(quoteLines.quoteId, quoteId));
+    if (serviceRows.length + equipmentRows.length + staffRows.length > 0) {
+      await tx.insert(quoteLines).values([
+        ...serviceRows.map((item) => ({
+          quoteId,
+          kind: "service" as const,
+          refId: item.id,
+          label: item.name,
+          quantity: 1,
+          unitPriceCents: item.basePriceCents,
+        })),
+        ...staffRows.map((item) => ({
+          quoteId,
+          kind: "staff" as const,
+          refId: item.id,
+          label: item.name,
+          quantity: 1,
+          unitPriceCents: item.priceCents,
+        })),
+        ...equipmentRows.map((item) => ({
+          quoteId,
+          kind: "equipment" as const,
+          refId: item.id,
+          label: item.name,
+          quantity: 1,
+          unitPriceCents: item.priceCents,
+        })),
+      ]);
+    }
+    await tx
+      .update(quotes)
+      .set({
+        status: intent === "send" ? "sent" : "draft",
+        note,
+        adjustment: bps > 0 ? "increase" : "none",
+        adjustmentBps: bps,
+        adjustmentReason: bps > 0 ? surchargeReason(danger, extras) : "",
+        totalCents,
+      })
+      .where(eq(quotes.id, quoteId));
+    if (intent === "send") {
+      await tx
+        .update(requests)
+        .set({ status: "quoted", updatedAt: new Date() })
+        .where(eq(requests.id, quote.requestId));
+    }
+  });
+
+  refreshRequest(quote.requestId);
+  return { ok: intent === "send" ? "Devis envoyé au client." : "Estimation enregistrée." };
 }
 
 export async function sendQuote(_state: ActionState, formData: FormData): Promise<ActionState> {
