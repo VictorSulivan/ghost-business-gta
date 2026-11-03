@@ -1,52 +1,13 @@
 import Image from "next/image";
 import Link from "next/link";
-import { connection } from "next/server";
 import { Suspense } from "react";
-import { PublicHeader } from "@/components/public-frame";
-import { listPublicCatalog } from "@/lib/queries";
+import { PublicCatalog } from "@/components/public-catalog";
+import { PublicFooter, PublicHeader } from "@/components/public-frame";
+import { buttonClass, buttonGhostClass } from "@/components/ui";
 
 const valuesLeft = ["Personnes", "Biens", "Événements", "Entreprises"];
 const valuesRight = ["Discrétion", "Professionnalisme", "Réactivité", "Protection"];
 const verbs = ["Protéger", "Anticiper", "Garantir"];
-
-type Offer = { id: string; name: string; detail: string };
-
-function OfferList({ items, empty }: { items: Offer[]; empty: string }) {
-  if (items.length === 0) return <p className="mt-4 text-sm text-muted">{empty}</p>;
-  return (
-    <ul className="mt-4 divide-y divide-accent/20">
-      {items.map((item) => (
-        <li key={item.id} className="py-2.5 text-sm">
-          <p>{item.name}</p>
-          {item.detail ? <p className="mt-1 text-muted">{item.detail}</p> : null}
-        </li>
-      ))}
-    </ul>
-  );
-}
-
-async function PublicCatalog() {
-  await connection();
-  const catalog = await listPublicCatalog();
-  return (
-    <section className="mt-14 grid gap-4 lg:grid-cols-2">
-      <article className="ghost-panel rounded-3xl p-6">
-        <h2 className="text-sm uppercase tracking-[0.22em] text-accent">Prestations</h2>
-        <OfferList items={catalog.services} empty="Aucune prestation pour le moment." />
-      </article>
-      <div className="grid gap-4">
-        <article className="ghost-panel rounded-3xl p-6">
-          <h2 className="text-sm uppercase tracking-[0.22em] text-accent">Effectifs</h2>
-          <OfferList items={catalog.staff} empty="Aucun effectif pour le moment." />
-        </article>
-        <article className="ghost-panel rounded-3xl p-6">
-          <h2 className="text-sm uppercase tracking-[0.22em] text-accent">Matériel</h2>
-          <OfferList items={catalog.equipment} empty="Aucun matériel pour le moment." />
-        </article>
-      </div>
-    </section>
-  );
-}
 
 export default function Home() {
   return (
@@ -79,7 +40,13 @@ export default function Home() {
               <span className="mt-1 block text-muted">Votre confiance, notre engagement.</span>
             </p>
             <div className="mt-8 flex flex-wrap justify-center gap-3">
-              <Link href="/connexion" className="rounded-full bg-accent px-5 py-2.5 text-sm font-semibold text-[#1a0b2e] shadow-[0_0_24px_rgba(168,85,247,0.35)]">
+              <Link href="/organisation" className={buttonClass}>
+                Découvrir l&apos;organisation
+              </Link>
+              <Link href="/services" className={buttonGhostClass}>
+                Voir nos services
+              </Link>
+              <Link href="/connexion" className={buttonGhostClass}>
                 Se connecter avec Discord
               </Link>
             </div>
@@ -115,6 +82,7 @@ export default function Home() {
           </p>
         </section>
       </main>
+      <PublicFooter />
     </div>
   );
 }

@@ -1,26 +1,39 @@
 import Link from "next/link";
-
-const links = [
-  { href: "/", label: "Accueil" },
-  { href: "/connexion", label: "Connexion" },
-];
+import { PublicNav } from "@/components/public-nav";
 
 export function PublicHeader() {
   return (
-    <header className="border-b border-accent/30 bg-black/40 backdrop-blur">
-      <div className="mx-auto flex max-w-6xl items-center justify-between gap-6 px-5 py-5">
+    <header className="sticky top-0 z-10 border-b border-accent/30 bg-black/70 backdrop-blur">
+      <div className="mx-auto flex max-w-6xl flex-col gap-4 px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:py-5">
         <Link href="/" className="font-serif text-xl tracking-[0.28em] text-foreground">
           GHOST
         </Link>
-        <nav className="flex gap-5 text-xs uppercase tracking-[0.18em] text-muted">
-          {links.map((link) => (
-            <Link key={link.href} href={link.href} className="hover:text-foreground">
-              {link.label}
-            </Link>
-          ))}
-        </nav>
+        <PublicNav />
       </div>
     </header>
+  );
+}
+
+export function PublicFooter() {
+  return (
+    <footer className="mt-auto border-t border-accent/20">
+      <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-5 py-6 font-mono text-[11px] uppercase tracking-[0.18em] text-muted">
+        <span>Ghost // Réseau sécurisé</span>
+        <span>
+          <span className="text-accent">●</span> Statut : opérationnel
+        </span>
+        <span>Division 01</span>
+      </div>
+    </footer>
+  );
+}
+
+export function PublicMark({ children }: { children: React.ReactNode }) {
+  return (
+    <h1 className="font-serif text-4xl tracking-[0.08em] uppercase sm:text-5xl">
+      <span className="mr-3 font-mono text-2xl tracking-normal text-accent sm:text-3xl">///</span>
+      {children}
+    </h1>
   );
 }
 
@@ -44,6 +57,7 @@ export function PublicPanel({
         </div>
         <div className="ghost-panel rounded-3xl p-6">{children}</div>
       </main>
+      <PublicFooter />
     </div>
   );
 }
