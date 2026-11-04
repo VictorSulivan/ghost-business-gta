@@ -5,11 +5,13 @@ import { eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createSession, deleteSession, getCurrentUser } from "@/lib/auth";
+import { accessForFunction, clearedStaffAccess, isStaffFunction, recordAudit } from "@/lib/access";
 import { closeVipChannel, ensureVipChannel } from "@/lib/channels";
+import { isVipState, isVipTier } from "@/lib/command";
 import { db } from "@/lib/db";
-import { users } from "@/lib/db/schema";
+import { users, vipEvents } from "@/lib/db/schema";
 import { eurosToCents, isEmail, readString, type ActionState } from "@/lib/format";
-import { assignableRoles, type Role } from "@/lib/session";
+import { assignableRoles, isStaff, type Role } from "@/lib/session";
 
 export async function login(_state: ActionState, formData: FormData): Promise<ActionState> {
   const email = readString(formData, "email").toLowerCase();
@@ -49,18 +51,59 @@ export async function updateMemberAccess(_state: ActionState, formData: FormData
   if (!allowed.includes(role as Role)) return { error: "Ce grade ne peut pas être attribué." };
 
   const nextRole = role as Role;
-  const next: { role: Role; active?: boolean; vipDiscountCents?: number } = { role: nextRole };
+  const next: {
+    role: Role;
+    active?: boolean;
+    vipDiscountCents?: number;
+    vipTier?: "argent" | "or" | "obsidienne";
+    vipState?: "actif" | "suspendu";
+    vipExpiresOn?: string | null;
+    vipBenefits?: string;
+    vipNotes?: string;
+  } = { role: nextRole };
   if (actor.role === "admin") next.active = readString(formData, "active") === "yes";
   if (nextRole === "vip") {
     const raw = readString(formData, "vipDiscount");
     const cents = raw ? eurosToCents(raw) : 0;
+    const tier = readString(formData, "tier");
+    const state = readString(formData, "state");
+    const expires = readString(formData, "expires");
+    const benefits = readString(formData, "benefits");
+    const notes = readString(formData, "notes");
     if (cents === null) return { error: "Indiquez la réduction VIP en euros, jusqu'à 1 000 000." };
+    if (!isVipTier(tier) || !isVipState(state)) return { error: "Niveau ou statut VIP inconnu." };
+    if (expires && !/^\d{4}-\d{2}-\d{2}$/.test(expires)) return { error: "La date de fin n'est pas valide." };
+    if (benefits.length > 2000 || notes.length > 2000) return { error: "Les textes VIP sont limités à 2000 caractères." };
     next.vipDiscountCents = cents;
+    next.vipTier = tier;
+    next.vipState = state;
+    next.vipExpiresOn = expires || null;
+    next.vipBenefits = benefits;
+    next.vipNotes = notes;
   }
+  const requestedFunction = readString(formData, "staffFunction");
+  const access = isStaff(nextRole)
+    ? await accessForFunction(
+        isStaffFunction(requestedFunction)
+          ? requestedFunction
+          : account.staffFunction && isStaffFunction(account.staffFunction)
+            ? account.staffFunction
+            : nextRole === "officer"
+              ? "commandement"
+              : "operations",
+      )
+    : clearedStaffAccess();
 
-  await db.update(users).set(next).where(eq(users.id, id));
-  if (nextRole === "vip") await ensureVipChannel(id);
-  else if (account.role === "vip") await closeVipChannel(id);
+  await db.update(users).set({ ...next, ...access }).where(eq(users.id, id));
+  await recordAudit(actor.id, `Grade de ${id.slice(0, 8)} passé à ${nextRole}.`);
+  if (nextRole === "vip") {
+    await ensureVipChannel(id);
+    await db.insert(vipEvents).values({
+      userId: id,
+      actorId: actor.id,
+      text: `Fiche VIP : ${next.vipTier}, ${next.vipState}.`,
+    });
+  } else if (account.role === "vip") await closeVipChannel(id);
   revalidatePath("/bureau/membres");
   revalidatePath("/bureau");
   revalidatePath("/espace");

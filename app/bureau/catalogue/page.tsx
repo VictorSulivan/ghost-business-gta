@@ -40,7 +40,7 @@ async function Catalogue() {
         entries={services.map((item) => toEntry({ ...item, priceCents: item.basePriceCents }, item.description))}
       />
       <CategoryBoard
-        title="Effectifs"
+        title="Agents"
         kind="staff"
         detailLabel="Note"
         entries={staffItems.map((item) => toEntry(item, item.notes))}

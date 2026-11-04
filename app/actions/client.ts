@@ -7,6 +7,7 @@ import { getCurrentUser } from "@/lib/auth";
 import { isClient, isStaff } from "@/lib/session";
 import { db } from "@/lib/db";
 import { messages, profiles, quotes, requests } from "@/lib/db/schema";
+import { isServiceFamily } from "@/lib/command";
 import { isClosedRequest, readString, type ActionState } from "@/lib/format";
 
 function refreshRequest(id: string) {
@@ -14,6 +15,8 @@ function refreshRequest(id: string) {
   revalidatePath("/espace/historique");
   revalidatePath(`/espace/demandes/${id}`);
   revalidatePath("/bureau");
+  revalidatePath("/bureau/communications");
+  revalidatePath("/bureau/contrats");
   revalidatePath(`/bureau/demandes/${id}`);
 }
 
@@ -55,11 +58,19 @@ export async function createRequest(_state: ActionState, formData: FormData): Pr
 
   const title = readString(formData, "title");
   const body = readString(formData, "body");
+  const family = readString(formData, "serviceFamily");
+  const location = readString(formData, "location");
+  const deadline = readString(formData, "deadline");
+  const budgetNote = readString(formData, "budgetNote");
+  if (!isServiceFamily(family)) return { error: "Choisissez un type de prestation." };
   if (title.length < 3 || title.length > 120) {
     return { error: "Le titre doit faire entre 3 et 120 caractères." };
   }
   if (body.length < 1 || body.length > 4000) {
     return { error: "Décrivez la demande, en 4000 caractères maximum." };
+  }
+  if (location.length > 160 || deadline.length > 160 || budgetNote.length > 500) {
+    return { error: "Le lieu, l'échéance et le budget sont trop longs." };
   }
 
   const requestId = crypto.randomUUID();
@@ -68,6 +79,10 @@ export async function createRequest(_state: ActionState, formData: FormData): Pr
       id: requestId,
       clientId: user.id,
       title,
+      serviceFamily: family,
+      location,
+      deadline,
+      budgetNote,
     });
     await tx.insert(messages).values({
       requestId,
@@ -158,7 +173,7 @@ export async function markDone(_state: ActionState, formData: FormData): Promise
 
   await db
     .update(requests)
-    .set({ status: "done", updatedAt: new Date() })
+    .set({ status: "done", finalizedAt: new Date(), suspended: false, updatedAt: new Date() })
     .where(eq(requests.id, requestId));
 
   refreshRequest(requestId);

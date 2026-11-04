@@ -4,27 +4,46 @@ import { NewRequestForm } from "@/components/request-forms";
 import { PageHeader, StatusBadge } from "@/components/ui";
 import { requireClient } from "@/lib/auth";
 import { findVipChannel } from "@/lib/channels";
-import { formatDate, requestStatusLabel } from "@/lib/format";
+import { contractLabel } from "@/lib/command";
+import { formatDate } from "@/lib/format";
 import { listClientRequests } from "@/lib/queries";
 
 async function Demandes() {
   const user = await requireClient();
-  const [items, channel] = await Promise.all([
+  const [active, past, channel] = await Promise.all([
     listClientRequests(user.id, "active"),
+    listClientRequests(user.id, "past"),
     user.role === "vip" ? findVipChannel(user.id) : Promise.resolve(null),
   ]);
-  const missions = items.filter((item) => !item.channel);
+  const missions = [...active, ...past].filter((item) => !item.channel);
+  const inTalk = missions.filter((item) => item.status === "quoted").length;
+  const agreements = missions.filter((item) => item.status === "accepted" || item.status === "done").length;
+  const openMissions = active.filter((item) => !item.channel);
 
   return (
     <div className="grid gap-8">
       <PageHeader
-        title={user.role === "vip" ? "Canal VIP" : "Demandes"}
-        lede={
-          user.role === "vip"
-            ? "Votre canal avec les membres reste ouvert. Inutile de rouvrir une demande après une clôture."
-            : "Ouvrez un dossier pour exposer un service de roleplay. La discussion continue dans le fil."
-        }
+        title={user.role === "vip" ? "Canal VIP" : "Portail client"}
+        lede="Une demande, un dossier, un contact. Décrivez la mission, échangez, puis acceptez la proposition."
       />
+      <div className="grid gap-3 sm:grid-cols-3">
+        {[
+          ["Mes demandes", missions.length],
+          ["En discussion", inTalk],
+          ["Accords", agreements],
+        ].map(([label, value]) => (
+          <article key={String(label)} className="ghost-panel px-5 py-4">
+            <p className="font-mono text-[11px] tracking-[0.16em] text-muted uppercase">{label}</p>
+            <p className="mt-2 font-serif text-4xl">{value}</p>
+          </article>
+        ))}
+      </div>
+      <ol className="grid gap-2 text-sm text-muted sm:grid-cols-4">
+        <li>01 — Dépôt du dossier</li>
+        <li>02 — Prise de contact</li>
+        <li>03 — Proposition</li>
+        <li>04 — Validation</li>
+      </ol>
       {channel && channel.status === "open" ? (
         <Link href={`/espace/demandes/${channel.id}`} className="ghost-panel px-5 py-5 hover:border-accent">
           <span className="font-mono text-[11px] tracking-[0.16em] text-accent uppercase">Canal permanent</span>
@@ -35,8 +54,8 @@ async function Demandes() {
       <NewRequestForm />
       <section className="grid gap-3">
         <h2 className="font-serif text-2xl">En cours</h2>
-        {missions.length === 0 ? <p className="text-muted">Aucune demande en cours.</p> : null}
-        {missions.map((item) => (
+        {openMissions.length === 0 ? <p className="text-muted">Aucune demande en cours.</p> : null}
+        {openMissions.map((item) => (
           <Link
             key={item.id}
             href={`/espace/demandes/${item.id}`}
@@ -46,7 +65,7 @@ async function Demandes() {
               <span className="block font-medium">{item.title}</span>
               <span className="text-sm text-muted">{formatDate(item.updatedAt)}</span>
             </span>
-            <StatusBadge label={requestStatusLabel[item.status]} />
+            <StatusBadge label={contractLabel(item)} />
           </Link>
         ))}
       </section>

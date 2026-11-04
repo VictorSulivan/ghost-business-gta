@@ -2,6 +2,7 @@
 
 import { useActionState, useEffect, useState } from "react";
 import { updateMemberAccess } from "@/app/actions/auth";
+import { vipStates, vipTiers } from "@/lib/command";
 import { formatMoney, type ActionState } from "@/lib/format";
 import { assignableRoles, roleLabel, type Role } from "@/lib/session";
 import { buttonClass, buttonGhostClass } from "./ui";
@@ -19,6 +20,12 @@ export type AccountRow = {
   role: Exclude<Role, "admin">;
   active: boolean;
   discountCents: number;
+  lastSeen: string;
+  tier: string;
+  vipState: string;
+  expires: string;
+  benefits: string;
+  notes: string;
 };
 
 function AccessForm({
@@ -64,10 +71,44 @@ function AccessForm({
         </select>
       </label>
       {role === "vip" ? (
-        <label className="grid gap-2 text-sm text-muted">
-          Réduction automatique (€)
-          <input name="vipDiscount" inputMode="decimal" defaultValue={discount} placeholder="0" />
-        </label>
+        <>
+          <label className="grid gap-2 text-sm text-muted">
+            Niveau
+            <select name="tier" defaultValue={account.tier || "argent"}>
+              {vipTiers.map((item) => (
+                <option key={item.id} value={item.id}>
+                  {item.label}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="grid gap-2 text-sm text-muted">
+            Statut VIP
+            <select name="state" defaultValue={account.vipState || "actif"}>
+              {vipStates.map((item) => (
+                <option key={item.id} value={item.id}>
+                  {item.label}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="grid gap-2 text-sm text-muted">
+            Fin d'accès
+            <input type="date" name="expires" defaultValue={account.expires} />
+          </label>
+          <label className="grid gap-2 text-sm text-muted">
+            Réduction automatique (€)
+            <input name="vipDiscount" inputMode="decimal" defaultValue={discount} placeholder="0" />
+          </label>
+          <label className="grid gap-2 text-sm text-muted">
+            Avantages
+            <textarea name="benefits" rows={3} maxLength={2000} defaultValue={account.benefits} />
+          </label>
+          <label className="grid gap-2 text-sm text-muted">
+            Notes internes
+            <textarea name="notes" rows={3} maxLength={2000} defaultValue={account.notes} />
+          </label>
+        </>
       ) : null}
       {actor === "admin" ? (
         <label className="grid gap-2 text-sm text-muted">
@@ -106,6 +147,7 @@ export function MemberBoard({
                 <th className="px-6 py-4 font-medium">Personnage</th>
                 <th className="px-6 py-4 font-medium">Discord</th>
                 <th className="px-6 py-4 font-medium">Depuis</th>
+                <th className="px-6 py-4 font-medium">Connexion</th>
                 <th className="px-6 py-4 font-medium">Grade</th>
                 <th className="px-6 py-4 font-medium">Réduction</th>
                 <th className="px-6 py-4 font-medium">Accès</th>
@@ -117,7 +159,7 @@ export function MemberBoard({
             <tbody>
               {accounts.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="px-6 py-8 text-muted">
+                  <td colSpan={8} className="px-6 py-8 text-muted">
                     Aucun compte pour le moment. Ils apparaissent après une première connexion Discord.
                   </td>
                 </tr>
@@ -129,6 +171,7 @@ export function MemberBoard({
                       <td className="px-6 py-5">{account.name}</td>
                       <td className="px-6 py-5 text-muted">{account.contact}</td>
                       <td className="whitespace-nowrap px-6 py-5">{account.since}</td>
+                      <td className="whitespace-nowrap px-6 py-5">{account.lastSeen}</td>
                       <td className="px-6 py-5">{roleLabel(account.role)}</td>
                       <td className="whitespace-nowrap px-6 py-5">
                         {account.role === "vip" ? formatMoney(account.discountCents) : "—"}

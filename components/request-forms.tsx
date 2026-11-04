@@ -4,6 +4,7 @@ import { useActionState, useEffect, useRef } from "react";
 import { cancelRequest, createRequest, markDone, sendMessage } from "@/app/actions/client";
 import { refuseRequest } from "@/app/actions/member";
 import type { ActionState } from "@/lib/format";
+import { serviceFamilies } from "@/lib/command";
 import { buttonClass, buttonDangerClass, buttonGhostClass } from "./ui";
 
 function Feedback({ state }: { state: ActionState }) {
@@ -17,16 +18,38 @@ export function NewRequestForm() {
     <form action={action} className="grid gap-4 ghost-panel p-5">
       <h2 className="font-serif text-2xl">Nouvelle demande</h2>
       <label className="grid gap-2 text-sm text-muted">
-        Titre
+        Type de prestation
+        <select name="serviceFamily" required defaultValue="protection">
+          {serviceFamilies.map((family) => (
+            <option key={family.id} value={family.id}>
+              {family.label}
+            </option>
+          ))}
+        </select>
+      </label>
+      <label className="grid gap-2 text-sm text-muted">
+        Objet
         <input name="title" required maxLength={120} />
       </label>
       <label className="grid gap-2 text-sm text-muted">
-        Ce que vous attendez du groupe
+        Description de la mission
         <textarea name="body" required rows={5} maxLength={4000} />
+      </label>
+      <label className="grid gap-2 text-sm text-muted">
+        Lieu
+        <input name="location" maxLength={160} />
+      </label>
+      <label className="grid gap-2 text-sm text-muted">
+        Échéance
+        <input name="deadline" maxLength={160} />
+      </label>
+      <label className="grid gap-2 text-sm text-muted">
+        Budget proposé
+        <input name="budgetNote" maxLength={500} />
       </label>
       <Feedback state={state} />
       <button className={buttonClass} disabled={pending}>
-        {pending ? "Envoi…" : "Ouvrir la demande"}
+        {pending ? "Envoi…" : "Transmettre la demande"}
       </button>
     </form>
   );

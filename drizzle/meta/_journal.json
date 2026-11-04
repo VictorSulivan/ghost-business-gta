@@ -64,6 +64,13 @@
       "when": 1793715000000,
       "tag": "0008_vip_discount",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1793716000000,
+      "tag": "0009_command_network",
+      "breakpoints": true
     }
   ]
 }

@@ -42,7 +42,11 @@ export async function GET(request: NextRequest) {
     }
     account = await db.query.users.findFirst({ where: eq(users.discordId, identity.id) });
   } else {
-    await db.update(users).set({ discordUsername: identity.username }).where(eq(users.id, account.id));
+    await db.update(users).set({ discordUsername: identity.username, lastSeenAt: new Date() }).where(eq(users.id, account.id));
+  }
+
+  if (account) {
+    await db.update(users).set({ lastSeenAt: new Date() }).where(eq(users.id, account.id));
   }
 
   if (!account || !account.active) return fail(request, "acces");

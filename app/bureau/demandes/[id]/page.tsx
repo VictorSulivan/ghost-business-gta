@@ -2,16 +2,18 @@ import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { RequestThread } from "@/components/request-thread";
 import { requireStaff } from "@/lib/auth";
-import { getRequestDetail, listEquipment, listServices, listStaff } from "@/lib/queries";
+import { accountName } from "@/lib/command";
+import { getRequestDetail, listEquipment, listServices, listStaff, listStaffAccounts } from "@/lib/queries";
 
 async function Demande({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const user = await requireStaff();
-  const [request, services, staffItems, equipmentItems] = await Promise.all([
+  const [request, services, staffItems, equipmentItems, accounts] = await Promise.all([
     getRequestDetail(id),
     listServices(),
     listStaff(),
     listEquipment(),
+    listStaffAccounts(),
   ]);
   if (!request) notFound();
 
@@ -35,6 +37,9 @@ async function Demande({ params }: { params: Promise<{ id: string }> }) {
         name: item.name,
         priceCents: item.priceCents,
       }))}
+      owners={accounts
+        .filter((account) => account.role !== "admin")
+        .map((account) => ({ id: account.id, name: accountName(account) }))}
     />
   );
 }

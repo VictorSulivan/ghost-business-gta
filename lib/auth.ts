@@ -5,6 +5,8 @@ import { redirect } from "next/navigation";
 import { cache } from "react";
 import { db } from "./db";
 import { users } from "./db/schema";
+import { touchLastSeen } from "./access";
+import { hasPermission, type PermissionKey } from "./command";
 import { canManageGrades, decrypt, encrypt, homePath, isClient, isStaff, type Role, type SessionPayload } from "./session";
 
 const COOKIE = "session";
@@ -22,6 +24,7 @@ export async function sealSession(userId: string, role: Role) {
 }
 
 export async function createSession(userId: string, role: Role) {
+  await touchLastSeen(userId);
   const token = await sealSession(userId, role);
   const jar = await cookies();
   jar.set(COOKIE, token, sessionCookieOptions);
@@ -83,6 +86,12 @@ export async function requireAdmin() {
 export async function requireGradeManager() {
   const user = await getCurrentUser();
   if (!user) endSession();
-  if (!canManageGrades(user.role)) redirect(homePath(user.role));
+  if (!canManageGrades(user.role) && !hasPermission(user, "access")) redirect(homePath(user.role));
+  return user;
+}
+
+export async function requirePermission(key: PermissionKey) {
+  const user = await requireStaff();
+  if (!hasPermission(user, key)) redirect("/bureau");
   return user;
 }

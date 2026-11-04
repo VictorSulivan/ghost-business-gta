@@ -193,6 +193,7 @@ export async function prepareQuote(_state: ActionState, formData: FormData): Pro
   if (isClosedRequest(request.status) || request.status === "accepted") {
     return { error: "Cette demande n'accepte plus de devis." };
   }
+  if (request.suspended) return { error: "Ce contrat est suspendu." };
   if (request.quotes.some((quote) => quote.status === "draft")) {
     return { error: "Un brouillon de devis existe déjà." };
   }
@@ -316,6 +317,7 @@ export async function saveQuoteComposition(_state: ActionState, formData: FormDa
   if (isClosedRequest(quote.request.status) || quote.request.status === "accepted") {
     return { error: "Cette demande n'accepte plus de devis." };
   }
+  if (quote.request.suspended) return { error: "Ce contrat est suspendu." };
 
   const serviceIds = uniqueIds(formData, "serviceId");
   const staffIds = uniqueIds(formData, "staffId");
@@ -348,9 +350,14 @@ export async function saveQuoteComposition(_state: ActionState, formData: FormDa
   const estimate = quoteEstimate(serviceCents, staffCents, equipmentCents, bps);
   const client = await db.query.users.findFirst({
     where: eq(users.id, quote.request.clientId),
-    columns: { role: true, vipDiscountCents: true },
+    columns: { role: true, vipDiscountCents: true, vipState: true },
   });
-  const vipDiscountCents = vipDiscountFor(client?.role ?? "", client?.vipDiscountCents ?? 0, estimate.totalCents);
+  const vipDiscountCents = vipDiscountFor(
+    client?.role ?? "",
+    client?.vipDiscountCents ?? 0,
+    estimate.totalCents,
+    client?.vipState,
+  );
   const totalCents = estimate.totalCents - vipDiscountCents;
 
   await db.transaction(async (tx) => {
@@ -441,14 +448,20 @@ export async function sendQuote(_state: ActionState, formData: FormData): Promis
   if (isClosedRequest(quote.request.status) || quote.request.status === "accepted") {
     return { error: "Cette demande n'accepte plus de devis." };
   }
+  if (quote.request.suspended) return { error: "Ce contrat est suspendu." };
 
   const subtotalCents = quote.lines.reduce((sum, line) => sum + line.quantity * line.unitPriceCents, 0);
   const adjustedCents = applyAdjustment(subtotalCents, adjustment, adjustmentBps);
   const client = await db.query.users.findFirst({
     where: eq(users.id, quote.request.clientId),
-    columns: { role: true, vipDiscountCents: true },
+    columns: { role: true, vipDiscountCents: true, vipState: true },
   });
-  const vipDiscountCents = vipDiscountFor(client?.role ?? "", client?.vipDiscountCents ?? 0, adjustedCents);
+  const vipDiscountCents = vipDiscountFor(
+    client?.role ?? "",
+    client?.vipDiscountCents ?? 0,
+    adjustedCents,
+    client?.vipState,
+  );
   const totalCents = adjustedCents - vipDiscountCents;
   await db.transaction(async (tx) => {
     await tx

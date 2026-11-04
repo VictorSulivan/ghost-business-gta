@@ -46,8 +46,8 @@ export function parseSurcharge(reason: string) {
   return { dangerId, extraIds };
 }
 
-export function vipDiscountFor(role: string, configuredCents: number, totalCents: number) {
-  if (role !== "vip" || configuredCents <= 0 || totalCents <= 0) return 0;
+export function vipDiscountFor(role: string, configuredCents: number, totalCents: number, state = "actif") {
+  if (role !== "vip" || state === "suspendu" || configuredCents <= 0 || totalCents <= 0) return 0;
   return Math.min(configuredCents, totalCents);
 }
 

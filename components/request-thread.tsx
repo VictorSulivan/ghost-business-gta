@@ -1,3 +1,4 @@
+import { ContractSheet, FinalizeContractButton } from "@/components/command-forms";
 import { QuoteComposer, QuoteFigures } from "@/components/quote-composer";
 import { AcceptQuoteButton, PrepareQuoteButton, RefuseQuoteButton } from "@/components/quote-forms";
 import {
@@ -6,8 +7,9 @@ import {
   MessageForm,
   RefuseRequestButton,
 } from "@/components/request-forms";
+import { contractLabel, vipDiscountActive } from "@/lib/command";
 import { roleLabel } from "@/lib/session";
-import { formatDate, isClosedRequest, quoteStatusLabel, requestStatusLabel } from "@/lib/format";
+import { formatDate, isClosedRequest, quoteStatusLabel } from "@/lib/format";
 import type { getRequestDetail } from "@/lib/queries";
 import { StatusBadge } from "./ui";
 
@@ -40,6 +42,7 @@ export function RequestThread({
   services,
   staffItems,
   equipmentItems,
+  owners = [],
 }: {
   request: RequestDetail;
   role: ViewerRole;
@@ -47,6 +50,7 @@ export function RequestThread({
   services: { id: string; name: string; priceCents: number }[];
   staffItems: { id: string; name: string; priceCents: number }[];
   equipmentItems: { id: string; name: string; priceCents: number }[];
+  owners?: { id: string; name: string }[];
 }) {
   const quotes = role === "client" ? request.quotes.filter((quote) => quote.status !== "draft") : request.quotes;
   const closed = isClosedRequest(request.status);
@@ -56,7 +60,9 @@ export function RequestThread({
     <div className="grid gap-8">
       <header className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <p className="text-xs uppercase tracking-[0.18em] text-accent">{request.channel ? "Canal permanent" : "Demande"}</p>
+          <p className="text-xs uppercase tracking-[0.18em] text-accent">
+            {request.channel ? "Canal permanent" : request.reference}
+          </p>
           <h1 className="mt-2 font-serif text-4xl">{request.title}</h1>
           <p className="mt-2 text-sm text-muted">
             {request.channel
@@ -64,8 +70,25 @@ export function RequestThread({
               : `Ouverte le ${formatDate(request.createdAt)}`}
           </p>
         </div>
-        <StatusBadge label={request.channel ? "Canal VIP" : requestStatusLabel[request.status]} />
+        <StatusBadge label={request.channel ? "Canal VIP" : contractLabel(request)} />
       </header>
+
+      {request.channel ? null : (
+        <ContractSheet
+          requestId={request.id}
+          reference={request.reference}
+          family={request.serviceFamily}
+          location={request.location}
+          deadline={request.deadline}
+          budgetNote={request.budgetNote}
+          terms={request.terms}
+          ownerId={request.ownerId}
+          suspended={request.suspended}
+          finalized={Boolean(request.finalizedAt)}
+          owners={owners ?? []}
+          editable={role === "member" && !closed}
+        />
+      )}
 
       {role === "member" && profile ? (
         <section className="ghost-panel p-5">
@@ -137,7 +160,9 @@ export function RequestThread({
                   equipmentItems={equipmentItems}
                   lines={quote.lines}
                   adjustmentReason={quote.adjustmentReason}
-                  vipDiscountCents={request.client.role === "vip" ? request.client.vipDiscountCents : 0}
+                  vipDiscountCents={
+                    vipDiscountActive(request.client.role, request.client.vipState) ? request.client.vipDiscountCents : 0
+                  }
                 />
               ) : (
                 <>
@@ -155,7 +180,7 @@ export function RequestThread({
             </article>
           );
         })}
-        {role === "member" && !closed && request.status !== "accepted" ? (
+        {role === "member" && !closed && !request.suspended && request.status !== "accepted" ? (
           <PrepareQuoteButton requestId={request.id} />
         ) : null}
       </section>
@@ -168,7 +193,8 @@ export function RequestThread({
           {role === "member" && (request.status === "open" || request.status === "quoted") ? (
             <RefuseRequestButton requestId={request.id} />
           ) : null}
-          {request.status === "accepted" ? <MarkDoneButton requestId={request.id} /> : null}
+          {role === "client" && request.status === "accepted" ? <MarkDoneButton requestId={request.id} /> : null}
+          {role === "member" && request.status === "accepted" ? <FinalizeContractButton requestId={request.id} /> : null}
         </section>
       )}
     </div>

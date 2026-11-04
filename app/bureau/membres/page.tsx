@@ -13,7 +13,7 @@ async function Membres() {
     <div className="grid gap-14 min-[1280px]:mr-[min(0px,calc((72rem-100vw)/2+1.5rem))]">
       <PageHeader
         title="Membres"
-        lede="Le commandement passe un client régulier en client VIP et fixe sa réduction, retirée automatiquement de chaque devis. Il peut aussi le promouvoir membre, puis un membre au commandement. L'administrateur garde les accès et ne peut pas être modifié."
+        lede="Grades, fiche VIP et accès. Le niveau, la réduction et les avantages d'un client VIP se règlent ici. L'administrateur ne peut pas être modifié."
       />
       <MemberBoard
         actor={actor.role === "admin" ? "admin" : "officer"}
@@ -25,9 +25,15 @@ async function Membres() {
               name: account.profile?.characterName ?? (account.discordUsername || "Compte"),
               contact: account.discordUsername || account.email || "Discord",
               since: formatDate(account.createdAt),
+              lastSeen: account.lastSeenAt ? formatDate(account.lastSeenAt) : "—",
               role: account.role,
               active: account.active,
               discountCents: account.vipDiscountCents,
+              tier: account.vipTier,
+              vipState: account.vipState,
+              expires: account.vipExpiresOn ?? "",
+              benefits: account.vipBenefits,
+              notes: account.vipNotes,
             },
           ];
         })}
