@@ -102,7 +102,7 @@ export function CategoryBoard({
         </button>
       </div>
       <div className={formOpen ? "grid items-start gap-4 xl:grid-cols-[minmax(0,1fr)_22rem]" : "grid"}>
-        <div className="overflow-x-auto ghost-panel rounded-3xl">
+        <div className="overflow-x-auto ghost-panel">
           <table className="w-full min-w-[48rem] text-left text-base">
             <thead className="text-sm uppercase tracking-[0.16em] text-accent">
               <tr>
@@ -143,7 +143,7 @@ export function CategoryBoard({
           </table>
         </div>
         {formOpen ? (
-          <div className="ghost-panel rounded-3xl p-5">
+          <div className="ghost-panel p-5">
             <CatalogEntryForm
               key={draft?.id ?? "new"}
               kind={kind}

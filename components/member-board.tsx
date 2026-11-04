@@ -89,7 +89,7 @@ export function MemberBoard({
     <section className="grid gap-4">
       <h2 className="font-serif text-2xl uppercase tracking-[0.12em]">Comptes Discord</h2>
       <div className={draft ? "grid items-start gap-4 xl:grid-cols-[minmax(0,1fr)_22rem]" : "grid"}>
-        <div className="overflow-x-auto ghost-panel rounded-3xl">
+        <div className="overflow-x-auto ghost-panel">
           <table className="w-full min-w-[48rem] text-left text-base">
             <thead className="text-sm uppercase tracking-[0.16em] text-accent">
               <tr>
@@ -137,7 +137,7 @@ export function MemberBoard({
           </table>
         </div>
         {draft ? (
-          <div className="ghost-panel rounded-3xl p-5">
+          <div className="ghost-panel p-5">
             <AccessForm key={draft.id} account={draft} actor={actor} onClose={() => setDraft(undefined)} />
           </div>
         ) : null}

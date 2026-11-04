@@ -10,7 +10,7 @@ export async function BureauShell({ children }: { children: React.ReactNode }) {
     ...(canManageGrades(user.role) ? [{ href: "/bureau/membres", label: "Membres" }] : []),
   ];
   return (
-    <AppShell links={links} characterName={user.profile?.characterName ?? "Membre"}>
+    <AppShell links={links} characterName={user.profile?.characterName ?? "Membre"} mark="Command network">
       {children}
     </AppShell>
   );

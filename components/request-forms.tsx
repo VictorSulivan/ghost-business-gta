@@ -14,7 +14,7 @@ function Feedback({ state }: { state: ActionState }) {
 export function NewRequestForm() {
   const [state, action, pending] = useActionState(createRequest, null);
   return (
-    <form action={action} className="grid gap-4 ghost-panel rounded-3xl p-5">
+    <form action={action} className="grid gap-4 ghost-panel p-5">
       <h2 className="font-serif text-2xl">Nouvelle demande</h2>
       <label className="grid gap-2 text-sm text-muted">
         Titre

@@ -22,16 +22,16 @@ export async function PublicCatalog() {
   const catalog = await listPublicCatalog();
   return (
     <section className="mt-14 grid gap-4 lg:grid-cols-2">
-      <article className="ghost-panel rounded-3xl p-6">
+      <article className="ghost-panel p-6">
         <h2 className="text-sm uppercase tracking-[0.22em] text-accent">Prestations</h2>
         <OfferList items={catalog.services} empty="Aucune prestation pour le moment." />
       </article>
       <div className="grid gap-4">
-        <article className="ghost-panel rounded-3xl p-6">
+        <article className="ghost-panel p-6">
           <h2 className="text-sm uppercase tracking-[0.22em] text-accent">Effectifs</h2>
           <OfferList items={catalog.staff} empty="Aucun effectif pour le moment." />
         </article>
-        <article className="ghost-panel rounded-3xl p-6">
+        <article className="ghost-panel p-6">
           <h2 className="text-sm uppercase tracking-[0.22em] text-accent">Matériel</h2>
           <OfferList items={catalog.equipment} empty="Aucun matériel pour le moment." />
         </article>

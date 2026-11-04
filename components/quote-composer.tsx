@@ -136,7 +136,7 @@ export function QuoteComposer({
   }
 
   return (
-    <form action={action} className="grid gap-5 rounded-2xl border border-white/10 bg-black p-4 text-foreground">
+    <form action={action} className="grid gap-5 border border-white/10 bg-black p-4 text-foreground">
       <input type="hidden" name="quoteId" value={quoteId} />
       <MissionPicker
         label="Type de mission"

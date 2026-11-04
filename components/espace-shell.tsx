@@ -10,7 +10,7 @@ const links = [
 export async function EspaceShell({ children }: { children: React.ReactNode }) {
   const user = await requireUser("client");
   return (
-    <AppShell links={links} characterName={user.profile?.characterName ?? "Client"}>
+    <AppShell links={links} characterName={user.profile?.characterName ?? "Client"} mark="Client access portal">
       {children}
     </AppShell>
   );

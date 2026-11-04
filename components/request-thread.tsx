@@ -62,7 +62,7 @@ export function RequestThread({
       </header>
 
       {role === "member" && profile ? (
-        <section className="ghost-panel rounded-3xl p-5">
+        <section className="ghost-panel p-5">
           <h2 className="font-serif text-2xl">Fiche du client</h2>
           <dl className="mt-4 grid gap-3 text-sm sm:grid-cols-2">
             <div>
@@ -94,7 +94,7 @@ export function RequestThread({
             return (
               <li
                 key={message.id}
-                className={`rounded-2xl border border-accent/30 px-4 py-3 ${mine ? "bg-accent/10" : "bg-black/40"}`}
+                className={`border border-accent/30 px-4 py-3 ${mine ? "bg-accent/10" : "bg-black/40"}`}
               >
                 <p className="text-sm text-accent">
                   {name}
@@ -114,7 +114,7 @@ export function RequestThread({
         {quotes.length === 0 ? <p className="text-muted">Aucun devis pour le moment.</p> : null}
         {quotes.map((quote) => {
           return (
-            <article key={quote.id} className="grid gap-4 ghost-panel rounded-3xl p-5">
+            <article key={quote.id} className="grid gap-4 ghost-panel p-5">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <p className="text-sm text-muted">
                   {quote.author.profile?.characterName ?? "Membre"} · {formatDate(quote.createdAt)}

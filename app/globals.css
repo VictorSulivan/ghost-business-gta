@@ -1,14 +1,14 @@
 @import "tailwindcss";
 
 :root {
-  --background: #07060e;
-  --foreground: #f5f3fb;
-  --muted: #b3a6cc;
-  --line: #6d4cae;
-  --card: #110b1a;
-  --accent: #c084fc;
-  --danger: #f0a0c0;
-  --ok: #c4b5fd;
+  --background: #07080d;
+  --foreground: #f3f0f5;
+  --muted: #b6b2c2;
+  --line: #49313d;
+  --card: #11131c;
+  --accent: #fb334b;
+  --danger: #fd596d;
+  --ok: #77d5b2;
 }
 
 @theme inline {
@@ -25,37 +25,34 @@
 }
 
 body {
-  background:
-    radial-gradient(900px 420px at 50% -8%, rgba(138, 72, 255, 0.28), transparent 62%),
-    radial-gradient(520px 320px at 100% 8%, rgba(88, 28, 170, 0.2), transparent 55%),
-    radial-gradient(480px 280px at 0% 30%, rgba(70, 20, 140, 0.16), transparent 50%),
-    var(--background);
+  background: radial-gradient(circle at 50% 12%, #21101f 0%, #08090f 40%, #06070a 100%);
   color: var(--foreground);
-  font-family: var(--font-sans), sans-serif;
+  font-family: var(--font-sans), Arial, sans-serif;
 }
 
 h1,
 h2,
 h3 {
   font-family: var(--font-serif), Georgia, serif;
+  font-weight: 500;
 }
 
 input,
 textarea,
 select {
   width: 100%;
-  border-radius: 0.7rem;
-  border: 1px solid color-mix(in srgb, var(--accent) 45%, #1a1028);
-  background: rgba(8, 6, 16, 0.85);
+  border-radius: 3px;
+  border: 1px solid #594253;
+  background: #0a0c13;
   color: var(--foreground);
-  padding: 0.65rem 0.8rem;
+  padding: 0.7rem 0.8rem;
 }
 
 input:focus,
 textarea:focus,
 select:focus {
-  outline: 2px solid color-mix(in srgb, var(--accent) 75%, white);
-  outline-offset: 1px;
+  outline: 2px solid #ac83dc;
+  outline-offset: 2px;
 }
 
 textarea {
@@ -69,21 +66,158 @@ input[type="range"] {
   padding: 0;
   border: 0;
   background: transparent;
-  accent-color: #f4f4f5;
+  accent-color: var(--accent);
+}
+
+.ghost-wrap {
+  width: min(1450px, 92%);
+  margin-inline: auto;
 }
 
 .ghost-panel {
-  border: 1px solid color-mix(in srgb, var(--accent) 55%, transparent);
-  background:
-    linear-gradient(180deg, rgba(88, 40, 150, 0.18), rgba(12, 8, 22, 0.92));
-  box-shadow:
-    0 0 0 1px rgba(18, 8, 32, 0.8) inset,
-    0 0 28px rgba(124, 58, 237, 0.16);
+  border: 1px solid #49313d;
+  background: linear-gradient(180deg, #15161df2, #0d0f17f5);
+  box-shadow: inset 0 0 30px #91192b14;
 }
 
-.metal {
-  background: linear-gradient(180deg, #ffffff 0%, #d9d4e8 42%, #8d86a8 100%);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
+.hero-stage {
+  position: relative;
+  height: 625px;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  background: radial-gradient(ellipse at 50% 55%, #3a1227, #100d16 55%, #06060b 100%);
+  border-bottom: 1px solid #44404a;
+}
+
+.hero-stage::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(0deg, transparent 0 3px, #0002 4px 5px);
+  opacity: 0.18;
+  pointer-events: none;
+  z-index: 2;
+}
+
+.hero-stage::after {
+  content: "";
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  height: 200px;
+  background: linear-gradient(transparent, #0a090e);
+  pointer-events: none;
+  z-index: 2;
+}
+
+.hero-soldiers,
+.hero-reaper,
+.hero-base {
+  position: absolute;
+  object-fit: cover;
+  pointer-events: none;
+}
+
+.hero-soldiers {
+  top: 0;
+  left: 0;
+  width: 37%;
+  height: 100%;
+  opacity: 0.72;
+  mask-image: linear-gradient(to right, black 60%, transparent);
+}
+
+.hero-reaper {
+  top: -5%;
+  left: 23%;
+  width: 51%;
+  height: 80%;
+  object-position: center top;
+  opacity: 0.66;
+  filter: contrast(1.12);
+  mask-image: linear-gradient(to bottom, black 30%, transparent 100%);
+}
+
+.hero-base {
+  top: 0;
+  right: 0;
+  width: 27%;
+  height: 100%;
+  opacity: 0.68;
+  mask-image: linear-gradient(to left, black 60%, transparent);
+}
+
+.hero-copy {
+  position: relative;
+  z-index: 3;
+  margin-left: 29%;
+  width: 71%;
+  padding: 90px 0 50px;
+  text-align: center;
+  text-shadow: 0 3px 18px #000;
+}
+
+.hero-title {
+  margin: 10px 0 0;
+  font-family: var(--font-geist-sans), Arial, sans-serif;
+  font-weight: 900;
+  font-style: italic;
+  font-size: clamp(65px, 9vw, 140px);
+  letter-spacing: 0.06em;
+  line-height: 1.1;
+  color: #d1d0dc;
+  text-shadow:
+    0 3px 0 #4d4d5c,
+    0 0 40px #000;
+}
+
+.hero-hud {
+  position: absolute;
+  bottom: 32px;
+  left: 3%;
+  z-index: 3;
+  color: #b0aeb9;
+  font:
+    11px/1.9 ui-monospace,
+    monospace;
+  opacity: 0.77;
+}
+
+@media (max-width: 720px) {
+  .hero-stage {
+    height: 670px;
+    align-items: flex-end;
+  }
+
+  .hero-soldiers {
+    width: 85%;
+    height: 56%;
+    opacity: 0.57;
+    mask-image: linear-gradient(to bottom, black, transparent);
+  }
+
+  .hero-reaper {
+    left: 15%;
+    width: 100%;
+    height: 51%;
+    opacity: 0.5;
+    mask-image: linear-gradient(to bottom, black 30%, transparent);
+  }
+
+  .hero-base {
+    width: 60%;
+    opacity: 0.28;
+  }
+
+  .hero-copy {
+    margin: 0;
+    width: 100%;
+    padding: 210px 6% 44px;
+  }
+
+  .hero-hud {
+    display: none;
+  }
 }

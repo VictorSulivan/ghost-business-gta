@@ -69,7 +69,7 @@ export function QuoteLineForm({
   }, [state]);
 
   return (
-    <form action={action} className="grid gap-3 rounded-2xl border border-line p-4">
+    <form action={action} className="grid gap-3 border border-line p-4">
       <input type="hidden" name="quoteId" value={quoteId} />
       <label className="grid gap-2 text-sm text-muted">
         Type de ligne
@@ -125,7 +125,7 @@ export function SendQuoteForm({ quoteId, note, subtotalCents }: { quoteId: strin
   return (
     <form action={action} className="grid gap-3">
       <input type="hidden" name="quoteId" value={quoteId} />
-      <fieldset className="grid gap-3 rounded-2xl border border-line p-4">
+      <fieldset className="grid gap-3 border border-line p-4">
         <legend className="px-1 text-sm uppercase tracking-[0.16em] text-accent">Ajustement</legend>
         <label className="grid gap-2 text-sm text-muted">
           Type

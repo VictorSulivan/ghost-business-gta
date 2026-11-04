@@ -24,7 +24,7 @@ async function Demandes() {
           <Link
             key={item.id}
             href={`/espace/demandes/${item.id}`}
-            className="flex flex-wrap items-center justify-between gap-3 ghost-panel rounded-2xl px-5 py-4 hover:border-accent"
+            className="flex flex-wrap items-center justify-between gap-3 ghost-panel px-5 py-4 hover:border-accent"
           >
             <span>
               <span className="block font-medium">{item.title}</span>
