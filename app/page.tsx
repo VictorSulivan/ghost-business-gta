@@ -1,6 +1,4 @@
 import Link from "next/link";
-import { Suspense } from "react";
-import { PublicCatalog } from "@/components/public-catalog";
 import { PublicFooter, PublicHeader } from "@/components/public-frame";
 import { buttonClass, buttonGhostClass } from "@/components/ui";
 
@@ -10,7 +8,6 @@ export default function Home() {
       <PublicHeader />
       <section className="hero-stage">
         <img className="hero-soldiers" src="/brand/hero_soldiers.webp" alt="" />
-        <img className="hero-reaper" src="/brand/hero_reaper.webp" alt="" />
         <img className="hero-base" src="/brand/hero_base.webp" alt="" />
         <div className="hero-hud">
           GHOST // SECURE NET
@@ -40,22 +37,6 @@ export default function Home() {
           </div>
         </div>
       </section>
-
-      <main className="ghost-wrap flex-1 py-14">
-        <h2 className="font-serif text-[clamp(1.75rem,3vw,2.4rem)] font-medium">
-          <span className="mr-4 font-mono text-2xl tracking-normal text-accent">///</span>
-          Publié par la division
-        </h2>
-        <p className="mt-4 max-w-2xl text-sm text-muted">
-          Prestations, effectifs et matériel annoncés par le commandement. Les tarifs se fixent au devis.
-        </p>
-        <Suspense fallback={<p className="mt-8 text-sm text-muted">Chargement du catalogue…</p>}>
-          <PublicCatalog />
-        </Suspense>
-        <p className="mt-8 text-center font-mono text-[11px] tracking-[0.18em] text-accent uppercase">
-          Validation obligatoire par le commandement Ghost.
-        </p>
-      </main>
       <PublicFooter />
     </div>
   );

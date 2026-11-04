@@ -4,7 +4,7 @@ import { and, eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth";
-import { isStaff } from "@/lib/session";
+import { isClient, isStaff } from "@/lib/session";
 import { db } from "@/lib/db";
 import { messages, profiles, quotes, requests } from "@/lib/db/schema";
 import { isClosedRequest, readString, type ActionState } from "@/lib/format";
@@ -25,7 +25,7 @@ async function ownedRequest(requestId: string, clientId: string) {
 
 export async function updateProfile(_state: ActionState, formData: FormData): Promise<ActionState> {
   const user = await getCurrentUser();
-  if (!user || user.role !== "client") return { error: "Connexion client requise." };
+  if (!user || !isClient(user.role)) return { error: "Connexion client requise." };
 
   const characterName = readString(formData, "characterName");
   const phone = readString(formData, "phone");
@@ -51,7 +51,7 @@ export async function updateProfile(_state: ActionState, formData: FormData): Pr
 
 export async function createRequest(_state: ActionState, formData: FormData): Promise<ActionState> {
   const user = await getCurrentUser();
-  if (!user || user.role !== "client") return { error: "Connexion client requise." };
+  if (!user || !isClient(user.role)) return { error: "Connexion client requise." };
 
   const title = readString(formData, "title");
   const body = readString(formData, "body");
@@ -92,10 +92,10 @@ export async function sendMessage(_state: ActionState, formData: FormData): Prom
 
   const request = await db.query.requests.findFirst({ where: eq(requests.id, requestId) });
   if (!request) return { error: "Demande introuvable." };
-  if (user.role === "client" && request.clientId !== user.id) {
+  if (isClient(user.role) && request.clientId !== user.id) {
     return { error: "Cette demande ne vous appartient pas." };
   }
-  if (user.role !== "client" && !isStaff(user.role)) {
+  if (!isClient(user.role) && !isStaff(user.role)) {
     return { error: "Connexion requise." };
   }
   if (isClosedRequest(request.status)) {
@@ -113,11 +113,12 @@ export async function sendMessage(_state: ActionState, formData: FormData): Prom
 
 export async function cancelRequest(_state: ActionState, formData: FormData): Promise<ActionState> {
   const user = await getCurrentUser();
-  if (!user || user.role !== "client") return { error: "Connexion client requise." };
+  if (!user || !isClient(user.role)) return { error: "Connexion client requise." };
 
   const requestId = readString(formData, "requestId");
   const request = await ownedRequest(requestId, user.id);
   if (!request) return { error: "Demande introuvable." };
+  if (request.channel) return { error: "Le canal permanent reste ouvert." };
   if (request.status !== "open" && request.status !== "quoted") {
     return { error: "Cette demande ne peut plus être annulée." };
   }
@@ -144,12 +145,13 @@ export async function markDone(_state: ActionState, formData: FormData): Promise
   const requestId = readString(formData, "requestId");
   const request = await db.query.requests.findFirst({ where: eq(requests.id, requestId) });
   if (!request) return { error: "Demande introuvable." };
-  if (user.role === "client" && request.clientId !== user.id) {
+  if (isClient(user.role) && request.clientId !== user.id) {
     return { error: "Cette demande ne vous appartient pas." };
   }
-  if (user.role !== "client" && !isStaff(user.role)) {
+  if (!isClient(user.role) && !isStaff(user.role)) {
     return { error: "Connexion requise." };
   }
+  if (request.channel) return { error: "Le canal permanent reste ouvert." };
   if (request.status !== "accepted") {
     return { error: "La demande doit être acceptée avant d'être close." };
   }

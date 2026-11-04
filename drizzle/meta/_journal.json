@@ -50,6 +50,20 @@
       "when": 1793713000000,
       "tag": "0006_officer_role",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1793714000000,
+      "tag": "0007_vip_role",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1793715000000,
+      "tag": "0008_vip_discount",
+      "breakpoints": true
     }
   ]
 }

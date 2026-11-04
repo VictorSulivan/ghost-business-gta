@@ -1,12 +1,12 @@
 import Link from "next/link";
 import { Suspense } from "react";
 import { PageHeader, StatusBadge } from "@/components/ui";
-import { requireUser } from "@/lib/auth";
+import { requireClient } from "@/lib/auth";
 import { formatDate, requestStatusLabel } from "@/lib/format";
 import { listClientRequests } from "@/lib/queries";
 
 async function Historique() {
-  const user = await requireUser("client");
+  const user = await requireClient();
   const items = await listClientRequests(user.id, "past");
 
   return (

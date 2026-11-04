@@ -1,12 +1,12 @@
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { RequestThread } from "@/components/request-thread";
-import { requireUser } from "@/lib/auth";
+import { requireClient } from "@/lib/auth";
 import { getRequestDetail } from "@/lib/queries";
 
 async function Demande({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const user = await requireUser("client");
+  const user = await requireClient();
   const request = await getRequestDetail(id);
   if (!request || request.clientId !== user.id) notFound();
 

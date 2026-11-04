@@ -1,10 +1,10 @@
 import { Suspense } from "react";
 import { ProfileForm } from "@/components/profile-form";
 import { PageHeader } from "@/components/ui";
-import { requireUser } from "@/lib/auth";
+import { requireClient } from "@/lib/auth";
 
 async function Profil() {
-  const user = await requireUser("client");
+  const user = await requireClient();
   const profile = user.profile;
   return (
     <div>

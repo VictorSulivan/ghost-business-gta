@@ -3,9 +3,9 @@
 import { and, eq, inArray, ne } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { getCurrentUser } from "@/lib/auth";
-import { isStaff } from "@/lib/session";
+import { isClient, isStaff } from "@/lib/session";
 import { db } from "@/lib/db";
-import { equipment, quoteLines, quotes, requests, services, staff } from "@/lib/db/schema";
+import { equipment, quoteLines, quotes, requests, services, staff, users } from "@/lib/db/schema";
 import {
   applyAdjustment,
   eurosToCents,
@@ -15,7 +15,7 @@ import {
   type QuoteAdjustment,
   type ActionState,
 } from "@/lib/format";
-import { dangerLevels, quoteEstimate, surchargeBps, surchargeOptions, surchargeReason } from "@/lib/quote-estimate";
+import { dangerLevels, quoteEstimate, surchargeBps, surchargeOptions, surchargeReason, vipDiscountFor } from "@/lib/quote-estimate";
 
 function refreshCatalog() {
   revalidatePath("/");
@@ -156,6 +156,7 @@ export async function refuseRequest(_state: ActionState, formData: FormData): Pr
   const requestId = readString(formData, "requestId");
   const request = await db.query.requests.findFirst({ where: eq(requests.id, requestId) });
   if (!request) return { error: "Demande introuvable." };
+  if (request.channel) return { error: "Le canal permanent reste ouvert." };
   if (request.status !== "open" && request.status !== "quoted") {
     return { error: "Cette demande ne peut plus être refusée." };
   }
@@ -344,7 +345,13 @@ export async function saveQuoteComposition(_state: ActionState, formData: FormDa
   const staffCents = staffRows.reduce((sum, item) => sum + item.priceCents, 0);
   const equipmentCents = equipmentRows.reduce((sum, item) => sum + item.priceCents, 0);
   const bps = surchargeBps(danger, extras);
-  const { totalCents } = quoteEstimate(serviceCents, staffCents, equipmentCents, bps);
+  const estimate = quoteEstimate(serviceCents, staffCents, equipmentCents, bps);
+  const client = await db.query.users.findFirst({
+    where: eq(users.id, quote.request.clientId),
+    columns: { role: true, vipDiscountCents: true },
+  });
+  const vipDiscountCents = vipDiscountFor(client?.role ?? "", client?.vipDiscountCents ?? 0, estimate.totalCents);
+  const totalCents = estimate.totalCents - vipDiscountCents;
 
   await db.transaction(async (tx) => {
     await tx.delete(quoteLines).where(eq(quoteLines.quoteId, quoteId));
@@ -384,10 +391,11 @@ export async function saveQuoteComposition(_state: ActionState, formData: FormDa
         adjustment: bps > 0 ? "increase" : "none",
         adjustmentBps: bps,
         adjustmentReason: bps > 0 ? surchargeReason(danger, extras) : "",
+        vipDiscountCents,
         totalCents,
       })
       .where(eq(quotes.id, quoteId));
-    if (intent === "send") {
+    if (intent === "send" && !quote.request.channel) {
       await tx
         .update(requests)
         .set({ status: "quoted", updatedAt: new Date() })
@@ -435,7 +443,13 @@ export async function sendQuote(_state: ActionState, formData: FormData): Promis
   }
 
   const subtotalCents = quote.lines.reduce((sum, line) => sum + line.quantity * line.unitPriceCents, 0);
-  const totalCents = applyAdjustment(subtotalCents, adjustment, adjustmentBps);
+  const adjustedCents = applyAdjustment(subtotalCents, adjustment, adjustmentBps);
+  const client = await db.query.users.findFirst({
+    where: eq(users.id, quote.request.clientId),
+    columns: { role: true, vipDiscountCents: true },
+  });
+  const vipDiscountCents = vipDiscountFor(client?.role ?? "", client?.vipDiscountCents ?? 0, adjustedCents);
+  const totalCents = adjustedCents - vipDiscountCents;
   await db.transaction(async (tx) => {
     await tx
       .update(quotes)
@@ -445,13 +459,16 @@ export async function sendQuote(_state: ActionState, formData: FormData): Promis
         adjustment,
         adjustmentBps,
         adjustmentReason: adjustment === "none" ? "" : reason,
+        vipDiscountCents,
         totalCents,
       })
       .where(eq(quotes.id, quoteId));
-    await tx
-      .update(requests)
-      .set({ status: "quoted", updatedAt: new Date() })
-      .where(eq(requests.id, quote.requestId));
+    if (!quote.request.channel) {
+      await tx
+        .update(requests)
+        .set({ status: "quoted", updatedAt: new Date() })
+        .where(eq(requests.id, quote.requestId));
+    }
   });
 
   refreshRequest(quote.requestId);
@@ -460,7 +477,7 @@ export async function sendQuote(_state: ActionState, formData: FormData): Promis
 
 export async function acceptQuote(_state: ActionState, formData: FormData): Promise<ActionState> {
   const user = await getCurrentUser();
-  if (!user || user.role !== "client") return { error: "Connexion client requise." };
+  if (!user || !isClient(user.role)) return { error: "Connexion client requise." };
 
   const quoteId = readString(formData, "quoteId");
   const quote = await db.query.quotes.findFirst({
@@ -479,10 +496,14 @@ export async function acceptQuote(_state: ActionState, formData: FormData): Prom
       .update(quotes)
       .set({ status: "refused" })
       .where(and(eq(quotes.requestId, quote.requestId), eq(quotes.status, "sent"), ne(quotes.id, quoteId)));
-    await tx
-      .update(requests)
-      .set({ status: "accepted", updatedAt: new Date() })
-      .where(eq(requests.id, quote.requestId));
+    if (!quote.request.channel) {
+      await tx
+        .update(requests)
+        .set({ status: "accepted", updatedAt: new Date() })
+        .where(eq(requests.id, quote.requestId));
+    } else {
+      await tx.update(requests).set({ updatedAt: new Date() }).where(eq(requests.id, quote.requestId));
+    }
   });
 
   refreshRequest(quote.requestId);
@@ -491,7 +512,7 @@ export async function acceptQuote(_state: ActionState, formData: FormData): Prom
 
 export async function refuseQuote(_state: ActionState, formData: FormData): Promise<ActionState> {
   const user = await getCurrentUser();
-  if (!user || user.role !== "client") return { error: "Connexion client requise." };
+  if (!user || !isClient(user.role)) return { error: "Connexion client requise." };
 
   const quoteId = readString(formData, "quoteId");
   const quote = await db.query.quotes.findFirst({

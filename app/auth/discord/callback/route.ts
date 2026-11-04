@@ -5,6 +5,7 @@ import { db } from "@/lib/db";
 import { profiles, users } from "@/lib/db/schema";
 import { discordStateCookie, exchangeDiscordCode } from "@/lib/discord";
 import { isUniqueViolation } from "@/lib/format";
+import { homePath } from "@/lib/session";
 
 function fail(request: NextRequest, code: string) {
   const response = NextResponse.redirect(new URL(`/connexion?erreur=${code}`, request.url));
@@ -47,7 +48,7 @@ export async function GET(request: NextRequest) {
   if (!account || !account.active) return fail(request, "acces");
 
   const token = await sealSession(account.id, account.role);
-  const response = NextResponse.redirect(new URL(account.role === "client" ? "/espace" : "/bureau", request.url));
+  const response = NextResponse.redirect(new URL(homePath(account.role), request.url));
   response.cookies.set("session", token, sessionCookieOptions);
   response.cookies.delete(discordStateCookie());
   return response;

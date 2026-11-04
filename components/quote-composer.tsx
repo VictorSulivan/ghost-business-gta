@@ -100,6 +100,7 @@ export function QuoteComposer({
   equipmentItems,
   lines,
   adjustmentReason,
+  vipDiscountCents = 0,
 }: {
   quoteId: string;
   note: string;
@@ -108,6 +109,7 @@ export function QuoteComposer({
   equipmentItems: Choice[];
   lines: Line[];
   adjustmentReason: string;
+  vipDiscountCents?: number;
 }) {
   const initial = parseSurcharge(adjustmentReason);
   const [serviceIds, setServiceIds] = useState(() =>
@@ -130,6 +132,7 @@ export function QuoteComposer({
     .reduce((sum, item) => sum + item.priceCents, 0);
   const bps = surchargeBps(danger, extras);
   const estimate = quoteEstimate(serviceCents, staffCents, equipmentCents, bps);
+  const vipDiscount = Math.min(Math.max(0, vipDiscountCents), Math.max(0, estimate.totalCents));
 
   function toggleExtra(id: string) {
     setExtras((current) => (current.includes(id) ? current.filter((item) => item !== id) : [...current, id]));
@@ -198,7 +201,8 @@ export function QuoteComposer({
         staffCents={staffCents}
         equipmentCents={equipmentCents}
         surchargeCents={estimate.surchargeCents}
-        totalCents={estimate.totalCents}
+        vipDiscountCents={vipDiscount}
+        totalCents={estimate.totalCents - vipDiscount}
       />
 
       <label className="grid gap-2 text-sm text-muted">
@@ -223,12 +227,14 @@ export function QuoteFigures({
   staffCents,
   equipmentCents,
   surchargeCents,
+  vipDiscountCents = 0,
   totalCents,
 }: {
   serviceCents: number;
   staffCents: number;
   equipmentCents: number;
   surchargeCents: number;
+  vipDiscountCents?: number;
   totalCents: number;
 }) {
   const rows = [
@@ -236,6 +242,7 @@ export function QuoteFigures({
     ["Personnel", staffCents],
     ["Matériel", equipmentCents],
     [surchargeCents < 0 ? "Ristourne" : "Majorations", surchargeCents],
+    ["Réduction VIP", vipDiscountCents > 0 ? -vipDiscountCents : 0],
   ].filter(([, amount]) => amount !== 0);
 
   return (
@@ -250,6 +257,7 @@ export function QuoteFigures({
       <p className="mt-2 font-sans text-4xl font-semibold tracking-tight">{formatMoney(totalCents)}</p>
       <p className="text-sm text-muted">
         Les majorations portent sur les prestations et les effectifs. Le matériel est ajouté ensuite.
+        {vipDiscountCents > 0 ? " La réduction VIP est retirée du total." : ""}
       </p>
     </div>
   );

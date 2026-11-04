@@ -152,9 +152,9 @@ input[type="range"] {
 .hero-copy {
   position: relative;
   z-index: 3;
-  margin-left: 29%;
-  width: 71%;
-  padding: 90px 0 50px;
+  margin-inline: auto;
+  width: min(820px, 92%);
+  padding: 40px 0 50px;
   text-align: center;
   text-shadow: 0 3px 18px #000;
 }
@@ -187,8 +187,8 @@ input[type="range"] {
 
 @media (max-width: 720px) {
   .hero-stage {
-    height: 670px;
-    align-items: flex-end;
+    height: 560px;
+    align-items: center;
   }
 
   .hero-soldiers {
@@ -212,9 +212,9 @@ input[type="range"] {
   }
 
   .hero-copy {
-    margin: 0;
-    width: 100%;
-    padding: 210px 6% 44px;
+    margin-inline: auto;
+    width: min(820px, 92%);
+    padding: 24px 6% 40px;
   }
 
   .hero-hud {

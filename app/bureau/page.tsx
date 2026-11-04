@@ -2,7 +2,7 @@ import Link from "next/link";
 import { Suspense } from "react";
 import { PageHeader, StatusBadge } from "@/components/ui";
 import { requireStaff } from "@/lib/auth";
-import { formatDate, requestStatusLabel } from "@/lib/format";
+import { formatDate, isClosedRequest, requestStatusLabel } from "@/lib/format";
 import { listAllRequests } from "@/lib/queries";
 
 async function Discussions() {
@@ -26,7 +26,7 @@ async function Discussions() {
                 {item.client.profile?.characterName ?? "Client"} · {formatDate(item.updatedAt)}
               </span>
             </span>
-            <StatusBadge label={requestStatusLabel[item.status]} />
+            <StatusBadge label={item.channel && !isClosedRequest(item.status) ? "Canal VIP" : requestStatusLabel[item.status]} />
           </Link>
         ))}
       </div>

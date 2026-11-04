@@ -46,6 +46,11 @@ export function parseSurcharge(reason: string) {
   return { dangerId, extraIds };
 }
 
+export function vipDiscountFor(role: string, configuredCents: number, totalCents: number) {
+  if (role !== "vip" || configuredCents <= 0 || totalCents <= 0) return 0;
+  return Math.min(configuredCents, totalCents);
+}
+
 export function quoteEstimate(serviceCents: number, staffCents: number, equipmentCents: number, bps: number) {
   const covered = serviceCents + staffCents;
   const withSurcharge = applyAdjustment(covered, bps > 0 ? "increase" : "none", bps);

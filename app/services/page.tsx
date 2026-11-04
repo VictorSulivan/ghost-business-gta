@@ -74,16 +74,6 @@ export default function Page() {
               </article>
             ))}
           </div>
-
-          <section className="mt-14">
-            <h2 className="font-serif text-[clamp(1.75rem,3vw,2.4rem)] font-medium">
-              <span className="mr-4 font-mono text-2xl tracking-normal text-accent">///</span>
-              Publié par la division
-            </h2>
-            <Suspense fallback={<p className="mt-6 text-sm text-muted">Chargement du catalogue…</p>}>
-              <PublicCatalog />
-            </Suspense>
-          </section>
         </div>
       </main>
       <ContractCall

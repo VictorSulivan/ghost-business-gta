@@ -1,6 +1,6 @@
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
-import { decrypt, isStaff } from "@/lib/session";
+import { decrypt, homePath, isClient, isStaff } from "@/lib/session";
 
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -12,7 +12,7 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(new URL("/connexion", request.url));
   }
 
-  if (isEspace && session?.role !== "client") {
+  if (isEspace && !(session && isClient(session.role))) {
     return NextResponse.redirect(new URL("/bureau", request.url));
   }
 
@@ -21,7 +21,7 @@ export async function proxy(request: NextRequest) {
   }
 
   if (session && (pathname === "/connexion" || pathname === "/inscription")) {
-    const destination = session.role === "client" ? "/espace" : "/bureau";
+    const destination = homePath(session.role);
     return NextResponse.redirect(new URL(destination, request.url));
   }
 

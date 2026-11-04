@@ -10,7 +10,7 @@ import {
   uuid,
 } from "drizzle-orm/pg-core";
 
-export const userRole = pgEnum("user_role", ["client", "member", "officer", "admin"]);
+export const userRole = pgEnum("user_role", ["client", "vip", "member", "officer", "admin"]);
 export const requestStatus = pgEnum("request_status", [
   "open",
   "quoted",
@@ -40,6 +40,7 @@ export const users = pgTable("users", {
   discordId: text("discord_id").unique(),
   discordUsername: text("discord_username").notNull().default(""),
   role: userRole("role").notNull(),
+  vipDiscountCents: integer("vip_discount_cents").notNull().default(0),
   active: boolean("active").notNull().default(true),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 });
@@ -93,6 +94,7 @@ export const requests = pgTable(
       .notNull()
       .references(() => users.id),
     title: text("title").notNull(),
+    channel: boolean("channel").notNull().default(false),
     status: requestStatus("status").notNull().default("open"),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
@@ -131,6 +133,7 @@ export const quotes = pgTable(
     adjustment: quoteAdjustment("adjustment").notNull().default("none"),
     adjustmentBps: integer("adjustment_bps").notNull().default(0),
     adjustmentReason: text("adjustment_reason").notNull().default(""),
+    vipDiscountCents: integer("vip_discount_cents").notNull().default(0),
     totalCents: integer("total_cents").notNull().default(0),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   },

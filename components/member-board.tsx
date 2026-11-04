@@ -2,7 +2,7 @@
 
 import { useActionState, useEffect, useState } from "react";
 import { updateMemberAccess } from "@/app/actions/auth";
-import type { ActionState } from "@/lib/format";
+import { formatMoney, type ActionState } from "@/lib/format";
 import { assignableRoles, roleLabel, type Role } from "@/lib/session";
 import { buttonClass, buttonGhostClass } from "./ui";
 
@@ -18,6 +18,7 @@ export type AccountRow = {
   since: string;
   role: Exclude<Role, "admin">;
   active: boolean;
+  discountCents: number;
 };
 
 function AccessForm({
@@ -30,7 +31,10 @@ function AccessForm({
   onClose: () => void;
 }) {
   const [state, action, pending] = useActionState(updateMemberAccess, null);
+  const [role, setRole] = useState<Role>(account.role);
   const roles = assignableRoles(actor, account.role);
+  const discount =
+    account.discountCents > 0 ? (account.discountCents / 100).toFixed(2).replace(".", ",") : "";
 
   useEffect(() => {
     if (state?.ok) onClose();
@@ -51,14 +55,20 @@ function AccessForm({
       </p>
       <label className="grid gap-2 text-sm text-muted">
         Grade
-        <select name="role" defaultValue={account.role}>
-          {roles.map((role) => (
-            <option key={role} value={role}>
-              {roleLabel(role)}
+        <select name="role" value={role} onChange={(event) => setRole(event.target.value as Role)}>
+          {roles.map((item) => (
+            <option key={item} value={item}>
+              {roleLabel(item)}
             </option>
           ))}
         </select>
       </label>
+      {role === "vip" ? (
+        <label className="grid gap-2 text-sm text-muted">
+          Réduction automatique (€)
+          <input name="vipDiscount" inputMode="decimal" defaultValue={discount} placeholder="0" />
+        </label>
+      ) : null}
       {actor === "admin" ? (
         <label className="grid gap-2 text-sm text-muted">
           Accès
@@ -97,6 +107,7 @@ export function MemberBoard({
                 <th className="px-6 py-4 font-medium">Discord</th>
                 <th className="px-6 py-4 font-medium">Depuis</th>
                 <th className="px-6 py-4 font-medium">Grade</th>
+                <th className="px-6 py-4 font-medium">Réduction</th>
                 <th className="px-6 py-4 font-medium">Accès</th>
                 <th className="px-6 py-4 font-medium">
                   <span className="sr-only">Action</span>
@@ -106,7 +117,7 @@ export function MemberBoard({
             <tbody>
               {accounts.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="px-6 py-8 text-muted">
+                  <td colSpan={7} className="px-6 py-8 text-muted">
                     Aucun compte pour le moment. Ils apparaissent après une première connexion Discord.
                   </td>
                 </tr>
@@ -119,6 +130,9 @@ export function MemberBoard({
                       <td className="px-6 py-5 text-muted">{account.contact}</td>
                       <td className="whitespace-nowrap px-6 py-5">{account.since}</td>
                       <td className="px-6 py-5">{roleLabel(account.role)}</td>
+                      <td className="whitespace-nowrap px-6 py-5">
+                        {account.role === "vip" ? formatMoney(account.discountCents) : "—"}
+                      </td>
                       <td className="px-6 py-5">{account.active ? "Ouvert" : "Fermé"}</td>
                       <td className="px-6 py-5 text-right">
                         {editable ? (

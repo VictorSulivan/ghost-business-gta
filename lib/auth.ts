@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 import { cache } from "react";
 import { db } from "./db";
 import { users } from "./db/schema";
-import { canManageGrades, decrypt, encrypt, isStaff, type Role, type SessionPayload } from "./session";
+import { canManageGrades, decrypt, encrypt, homePath, isClient, isStaff, type Role, type SessionPayload } from "./session";
 
 const COOKIE = "session";
 
@@ -55,7 +55,14 @@ function endSession(): never {
 export async function requireUser(role: Role) {
   const user = await getCurrentUser();
   if (!user) endSession();
-  if (user.role !== role) redirect(user.role === "client" ? "/espace" : "/bureau");
+  if (user.role !== role) redirect(homePath(user.role));
+  return user;
+}
+
+export async function requireClient() {
+  const user = await getCurrentUser();
+  if (!user) endSession();
+  if (!isClient(user.role)) redirect("/bureau");
   return user;
 }
 
@@ -69,13 +76,13 @@ export async function requireStaff() {
 export async function requireAdmin() {
   const user = await getCurrentUser();
   if (!user) endSession();
-  if (user.role !== "admin") redirect(user.role === "client" ? "/espace" : "/bureau");
+  if (user.role !== "admin") redirect(homePath(user.role));
   return user;
 }
 
 export async function requireGradeManager() {
   const user = await getCurrentUser();
   if (!user) endSession();
-  if (!canManageGrades(user.role)) redirect(user.role === "client" ? "/espace" : "/bureau");
+  if (!canManageGrades(user.role)) redirect(homePath(user.role));
   return user;
 }

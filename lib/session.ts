@@ -1,9 +1,17 @@
 import { SignJWT, jwtVerify } from "jose";
 
-export type Role = "client" | "member" | "officer" | "admin";
+export type Role = "client" | "vip" | "member" | "officer" | "admin";
+
+export function isClient(role: Role) {
+  return role === "client" || role === "vip";
+}
 
 export function isStaff(role: Role) {
   return role === "member" || role === "officer" || role === "admin";
+}
+
+export function homePath(role: Role) {
+  return isClient(role) ? "/espace" : "/bureau";
 }
 
 export function canManageGrades(role: Role) {
@@ -13,14 +21,15 @@ export function canManageGrades(role: Role) {
 export function roleLabel(role: Role) {
   if (role === "officer") return "Commandement";
   if (role === "member") return "Membre";
+  if (role === "vip") return "Client VIP";
   if (role === "admin") return "Admin";
   return "Client";
 }
 
 export function assignableRoles(actor: Role, current: Role): Role[] {
   if (current === "admin") return [];
-  if (actor === "admin") return ["client", "member", "officer"];
-  if (actor === "officer" && current === "client") return ["client", "member"];
+  if (actor === "admin") return ["client", "vip", "member", "officer"];
+  if (actor === "officer" && (current === "client" || current === "vip")) return ["client", "vip", "member"];
   if (actor === "officer" && current === "member") return ["member", "officer"];
   return [];
 }
@@ -51,7 +60,13 @@ export async function decrypt(token: string | undefined): Promise<SessionPayload
   try {
     const { payload } = await jwtVerify(token, getKey(), { algorithms: ["HS256"] });
     if (typeof payload.userId !== "string") return null;
-    if (payload.role !== "client" && payload.role !== "member" && payload.role !== "officer" && payload.role !== "admin") {
+    if (
+      payload.role !== "client" &&
+      payload.role !== "vip" &&
+      payload.role !== "member" &&
+      payload.role !== "officer" &&
+      payload.role !== "admin"
+    ) {
       return null;
     }
     return { userId: payload.userId, role: payload.role };

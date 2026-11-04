@@ -22,11 +22,13 @@ function quoteFigures(quote: RequestDetail["quotes"][number]) {
   const equipmentCents = sum("equipment");
   const lineSum = serviceCents + staffCents + equipmentCents;
   const totalCents = quote.totalCents || lineSum;
+  const vipDiscountCents = quote.vipDiscountCents;
   return {
     serviceCents,
     staffCents,
     equipmentCents,
-    surchargeCents: totalCents - lineSum,
+    surchargeCents: totalCents - lineSum + vipDiscountCents,
+    vipDiscountCents,
     totalCents,
   };
 }
@@ -54,11 +56,15 @@ export function RequestThread({
     <div className="grid gap-8">
       <header className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <p className="text-xs uppercase tracking-[0.18em] text-accent">Demande</p>
+          <p className="text-xs uppercase tracking-[0.18em] text-accent">{request.channel ? "Canal permanent" : "Demande"}</p>
           <h1 className="mt-2 font-serif text-4xl">{request.title}</h1>
-          <p className="mt-2 text-sm text-muted">Ouverte le {formatDate(request.createdAt)}</p>
+          <p className="mt-2 text-sm text-muted">
+            {request.channel
+              ? "Ce canal reste ouvert. Les échanges avec la division continuent ici."
+              : `Ouverte le ${formatDate(request.createdAt)}`}
+          </p>
         </div>
-        <StatusBadge label={requestStatusLabel[request.status]} />
+        <StatusBadge label={request.channel ? "Canal VIP" : requestStatusLabel[request.status]} />
       </header>
 
       {role === "member" && profile ? (
@@ -131,6 +137,7 @@ export function RequestThread({
                   equipmentItems={equipmentItems}
                   lines={quote.lines}
                   adjustmentReason={quote.adjustmentReason}
+                  vipDiscountCents={request.client.role === "vip" ? request.client.vipDiscountCents : 0}
                 />
               ) : (
                 <>
@@ -153,15 +160,17 @@ export function RequestThread({
         ) : null}
       </section>
 
-      <section className="flex flex-wrap gap-3">
-        {role === "client" && (request.status === "open" || request.status === "quoted") ? (
-          <CancelRequestButton requestId={request.id} />
-        ) : null}
-        {role === "member" && (request.status === "open" || request.status === "quoted") ? (
-          <RefuseRequestButton requestId={request.id} />
-        ) : null}
-        {request.status === "accepted" ? <MarkDoneButton requestId={request.id} /> : null}
-      </section>
+      {request.channel ? null : (
+        <section className="flex flex-wrap gap-3">
+          {role === "client" && (request.status === "open" || request.status === "quoted") ? (
+            <CancelRequestButton requestId={request.id} />
+          ) : null}
+          {role === "member" && (request.status === "open" || request.status === "quoted") ? (
+            <RefuseRequestButton requestId={request.id} />
+          ) : null}
+          {request.status === "accepted" ? <MarkDoneButton requestId={request.id} /> : null}
+        </section>
+      )}
     </div>
   );
 }

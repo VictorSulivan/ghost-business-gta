@@ -2,25 +2,41 @@ import Link from "next/link";
 import { Suspense } from "react";
 import { NewRequestForm } from "@/components/request-forms";
 import { PageHeader, StatusBadge } from "@/components/ui";
-import { requireUser } from "@/lib/auth";
+import { requireClient } from "@/lib/auth";
+import { findVipChannel } from "@/lib/channels";
 import { formatDate, requestStatusLabel } from "@/lib/format";
 import { listClientRequests } from "@/lib/queries";
 
 async function Demandes() {
-  const user = await requireUser("client");
-  const items = await listClientRequests(user.id, "active");
+  const user = await requireClient();
+  const [items, channel] = await Promise.all([
+    listClientRequests(user.id, "active"),
+    user.role === "vip" ? findVipChannel(user.id) : Promise.resolve(null),
+  ]);
+  const missions = items.filter((item) => !item.channel);
 
   return (
     <div className="grid gap-8">
       <PageHeader
-        title="Demandes"
-        lede="Ouvrez un dossier pour exposer un service de roleplay. La discussion continue dans le fil."
+        title={user.role === "vip" ? "Canal VIP" : "Demandes"}
+        lede={
+          user.role === "vip"
+            ? "Votre canal avec les membres reste ouvert. Inutile de rouvrir une demande après une clôture."
+            : "Ouvrez un dossier pour exposer un service de roleplay. La discussion continue dans le fil."
+        }
       />
+      {channel && channel.status === "open" ? (
+        <Link href={`/espace/demandes/${channel.id}`} className="ghost-panel px-5 py-5 hover:border-accent">
+          <span className="font-mono text-[11px] tracking-[0.16em] text-accent uppercase">Canal permanent</span>
+          <span className="mt-2 block font-medium">{channel.title}</span>
+          <span className="mt-1 block text-sm text-muted">Écrire aux membres, sans clôturer la conversation.</span>
+        </Link>
+      ) : null}
       <NewRequestForm />
       <section className="grid gap-3">
         <h2 className="font-serif text-2xl">En cours</h2>
-        {items.length === 0 ? <p className="text-muted">Aucune demande en cours.</p> : null}
-        {items.map((item) => (
+        {missions.length === 0 ? <p className="text-muted">Aucune demande en cours.</p> : null}
+        {missions.map((item) => (
           <Link
             key={item.id}
             href={`/espace/demandes/${item.id}`}
