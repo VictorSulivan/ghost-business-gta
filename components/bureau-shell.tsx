@@ -8,6 +8,8 @@ export async function BureauShell({ children }: { children: React.ReactNode }) {
   const grade = canManageGrades(user.role) || hasPermission(user, "access");
   const links = [
     { href: "/bureau", label: "Vue générale" },
+    { href: "/bureau/discussions", label: "Discussions" },
+    { href: "/bureau/vip", label: "Discussions VIP" },
     ...(hasPermission(user, "contracts") || hasPermission(user, "communications")
       ? [{ href: "/bureau/contrats", label: "Contrats" }]
       : []),

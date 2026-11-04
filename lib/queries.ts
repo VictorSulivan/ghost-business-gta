@@ -25,6 +25,19 @@ export async function listClientRequests(clientId: string, scope: "active" | "pa
   });
 }
 
+export async function listDiscussions() {
+  return db.query.requests.findMany({
+    orderBy: [desc(requests.updatedAt)],
+    with: {
+      client: { with: { profile: true } },
+      messages: {
+        limit: 1,
+        orderBy: (table, operators) => [operators.desc(table.createdAt)],
+      },
+    },
+  });
+}
+
 export async function listAllRequests() {
   return db.query.requests.findMany({
     orderBy: [desc(requests.updatedAt)],
@@ -149,6 +162,14 @@ export async function listDossiers() {
   return db.query.dossiers.findMany({
     orderBy: [desc(dossiers.updatedAt)],
     with: { author: { with: { profile: true } } },
+  });
+}
+
+export async function listVipChannels() {
+  return db.query.requests.findMany({
+    where: eq(requests.channel, true),
+    with: { client: { with: { profile: true } } },
+    orderBy: [desc(requests.updatedAt)],
   });
 }
 

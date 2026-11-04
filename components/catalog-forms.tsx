@@ -28,12 +28,10 @@ const catalogAction = {
 function CatalogEntryForm({
   kind,
   entry,
-  detailLabel,
   onClose,
 }: {
   kind: keyof typeof catalogAction;
   entry: CatalogEntry | null;
-  detailLabel: string;
   onClose: () => void;
 }) {
   const [state, action, pending] = useActionState(catalogAction[kind], null);
@@ -57,7 +55,7 @@ function CatalogEntryForm({
         <input name="name" required defaultValue={entry?.name ?? ""} maxLength={80} />
       </label>
       <label className="grid gap-2 text-sm text-muted">
-        {detailLabel}
+        Description
         <textarea name={detailName} rows={3} defaultValue={entry?.detail ?? ""} maxLength={2000} />
       </label>
       <label className="grid gap-2 text-sm text-muted">
@@ -79,81 +77,129 @@ function CatalogEntryForm({
   );
 }
 
+function CatalogDetail({
+  entry,
+  onEdit,
+  onClose,
+}: {
+  entry: CatalogEntry;
+  onEdit: () => void;
+  onClose: () => void;
+}) {
+  return (
+    <div className="grid gap-4">
+      <div className="flex items-start justify-between gap-3">
+        <h3 className="font-serif text-xl">{entry.name}</h3>
+        <button type="button" className="text-sm text-muted hover:text-foreground" onClick={onClose}>
+          Fermer
+        </button>
+      </div>
+      <dl className="grid gap-3 text-sm">
+        <div>
+          <dt className="text-muted">Description</dt>
+          <dd className="mt-1 whitespace-pre-wrap">{entry.detail || "—"}</dd>
+        </div>
+        <div>
+          <dt className="text-muted">Coût</dt>
+          <dd className="mt-1 text-accent">{entry.priceLabel}</dd>
+        </div>
+        <div>
+          <dt className="text-muted">Utilisable sur une mission</dt>
+          <dd className="mt-1">{entry.active ? "Oui" : "Non"}</dd>
+        </div>
+      </dl>
+      <button type="button" className={buttonClass} onClick={onEdit}>
+        Modifier
+      </button>
+    </div>
+  );
+}
+
 export function CategoryBoard({
   title,
   kind,
-  detailLabel,
   entries,
 }: {
   title: string;
   kind: keyof typeof catalogAction;
-  detailLabel: string;
   entries: CatalogEntry[];
 }) {
-  const [draft, setDraft] = useState<CatalogEntry | null | undefined>(undefined);
-  const formOpen = draft !== undefined;
+  const [panel, setPanel] = useState<
+    { mode: "create" } | { mode: "detail"; entry: CatalogEntry } | { mode: "edit"; entry: CatalogEntry } | null
+  >(null);
 
   return (
-    <section className="grid gap-4">
-      <div className="flex flex-wrap items-center justify-between gap-3">
+    <section className="grid gap-3">
+      <div className="flex items-center justify-between gap-3">
         <h2 className="font-serif text-2xl uppercase tracking-[0.12em]">{title}</h2>
-        <button type="button" className={buttonClass} onClick={() => setDraft(null)}>
+        <button type="button" className={`${buttonClass} shrink-0 px-3 py-2 text-sm`} onClick={() => setPanel({ mode: "create" })}>
           Ajouter
         </button>
       </div>
-      <div className={formOpen ? "grid items-start gap-4 xl:grid-cols-[minmax(0,1fr)_22rem]" : "grid"}>
-        <div className="overflow-x-auto ghost-panel">
-          <table className="w-full min-w-[48rem] text-left text-base">
-            <thead className="text-sm uppercase tracking-[0.16em] text-accent">
+      <div className="ghost-panel">
+        <table className="w-full table-fixed text-left text-base">
+          <colgroup>
+            <col className="w-[46%]" />
+            <col className="w-[27%]" />
+            <col className="w-[27%]" />
+          </colgroup>
+          <thead className="text-sm uppercase tracking-[0.16em] text-accent">
+            <tr>
+              <th className="px-5 py-4 font-medium">Nom</th>
+              <th className="px-5 py-4 font-medium">Coût</th>
+              <th className="px-5 py-4 font-medium">
+                <span className="sr-only">Détail</span>
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {entries.length === 0 ? (
               <tr>
-                <th className="px-6 py-4 font-medium">Nom</th>
-                <th className="px-6 py-4 font-medium">{detailLabel}</th>
-                <th className="px-6 py-4 font-medium">Coût</th>
-                <th className="px-6 py-4 font-medium">Mission</th>
-                <th className="px-6 py-4 font-medium">
-                  <span className="sr-only">Action</span>
-                </th>
+                <td colSpan={3} className="px-4 py-6 text-muted">
+                  Aucun élément.
+                </td>
               </tr>
-            </thead>
-            <tbody>
-              {entries.length === 0 ? (
-                <tr>
-                  <td colSpan={5} className="px-6 py-8 text-muted">
-                    Aucun élément.
-                  </td>
-                </tr>
-              ) : (
-                entries.map((entry) => (
-                  <tr key={entry.id} className="border-t border-accent/20">
-                    <td className="px-6 py-5">{entry.name}</td>
-                    <td className="px-6 py-5 text-muted">
-                      <span className="line-clamp-2">{entry.detail || "—"}</span>
-                    </td>
-                    <td className="whitespace-nowrap px-6 py-5 text-accent">{entry.priceLabel}</td>
-                    <td className="px-6 py-5">{entry.active ? "Oui" : "Non"}</td>
-                    <td className="px-6 py-5 text-right">
-                      <button type="button" className={buttonGhostClass} onClick={() => setDraft(entry)}>
-                        Modifier
+            ) : (
+              entries.map((entry) => {
+                const open = panel && panel.mode !== "create" && panel.entry.id === entry.id;
+                return (
+                  <tr key={entry.id} className={`border-t border-accent/20 ${open ? "bg-accent/10" : ""}`}>
+                    <td className="px-5 py-4">{entry.name}</td>
+                    <td className="px-5 py-4 whitespace-nowrap text-accent">{entry.priceLabel}</td>
+                    <td className="px-5 py-4 text-right">
+                      <button
+                        type="button"
+                        className={`${buttonGhostClass} px-3 py-1.5`}
+                        onClick={() => setPanel({ mode: "detail", entry })}
+                      >
+                        Détail
                       </button>
                     </td>
                   </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-        {formOpen ? (
-          <div className="ghost-panel p-5">
-            <CatalogEntryForm
-              key={draft?.id ?? "new"}
-              kind={kind}
-              entry={draft}
-              detailLabel={detailLabel}
-              onClose={() => setDraft(undefined)}
-            />
-          </div>
-        ) : null}
+                );
+              })
+            )}
+          </tbody>
+        </table>
       </div>
+      {panel ? (
+        <div className="ghost-panel p-5">
+          {panel.mode === "detail" ? (
+            <CatalogDetail
+              entry={panel.entry}
+              onEdit={() => setPanel({ mode: "edit", entry: panel.entry })}
+              onClose={() => setPanel(null)}
+            />
+          ) : (
+            <CatalogEntryForm
+              key={panel.mode === "edit" ? panel.entry.id : "new"}
+              kind={kind}
+              entry={panel.mode === "edit" ? panel.entry : null}
+              onClose={() => setPanel(null)}
+            />
+          )}
+        </div>
+      ) : null}
     </section>
   );
 }

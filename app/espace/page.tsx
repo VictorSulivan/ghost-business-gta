@@ -3,13 +3,14 @@ import { Suspense } from "react";
 import { NewRequestForm } from "@/components/request-forms";
 import { PageHeader, StatusBadge } from "@/components/ui";
 import { requireClient } from "@/lib/auth";
-import { findVipChannel } from "@/lib/channels";
+import { ensureVipChannel, findVipChannel } from "@/lib/channels";
 import { contractLabel } from "@/lib/command";
 import { formatDate } from "@/lib/format";
 import { listClientRequests } from "@/lib/queries";
 
 async function Demandes() {
   const user = await requireClient();
+  if (user.role === "vip" && user.vipState !== "suspendu") await ensureVipChannel(user.id);
   const [active, past, channel] = await Promise.all([
     listClientRequests(user.id, "active"),
     listClientRequests(user.id, "past"),
@@ -23,8 +24,12 @@ async function Demandes() {
   return (
     <div className="grid gap-8">
       <PageHeader
-        title={user.role === "vip" ? "Canal VIP" : "Portail client"}
-        lede="Une demande, un dossier, un contact. Décrivez la mission, échangez, puis acceptez la proposition."
+        title={user.role === "vip" ? "Espace VIP" : "Portail client"}
+        lede={
+          user.role === "vip"
+            ? "Votre discussion avec les membres reste ouverte. Une mission précise passe par une demande à part."
+            : "Une demande, un dossier, un contact. Décrivez la mission, échangez, puis acceptez la proposition."
+        }
       />
       <div className="grid gap-3 sm:grid-cols-3">
         {[
@@ -48,7 +53,7 @@ async function Demandes() {
         <Link href={`/espace/demandes/${channel.id}`} className="ghost-panel px-5 py-5 hover:border-accent">
           <span className="font-mono text-[11px] tracking-[0.16em] text-accent uppercase">Canal permanent</span>
           <span className="mt-2 block font-medium">{channel.title}</span>
-          <span className="mt-1 block text-sm text-muted">Écrire aux membres, sans clôturer la conversation.</span>
+          <span className="mt-1 block text-sm text-muted">Discussion privilégiée avec les membres. Elle ne se ferme pas.</span>
         </Link>
       ) : null}
       <NewRequestForm />

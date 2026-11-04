@@ -9,13 +9,13 @@ import { listAllRequests } from "@/lib/queries";
 async function Contrats() {
   const user = await requireStaff();
   if (!hasPermission(user, "contracts") && !hasPermission(user, "communications")) redirect("/bureau");
-  const items = await listAllRequests();
+  const items = (await listAllRequests()).filter((item) => !item.channel);
 
   return (
     <div className="grid gap-6">
       <PageHeader
         title="Contrats"
-        lede="Demandes, canaux VIP et négociations. La discussion et le devis sont dans le dossier."
+        lede="Demandes et négociations. La discussion privilégiée des clients VIP est à part."
       />
       <div className="overflow-x-auto ghost-panel">
         <table className="w-full min-w-[52rem] text-left text-sm">

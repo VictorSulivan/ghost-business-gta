@@ -65,8 +65,8 @@ export function MessageForm({ requestId }: { requestId: string }) {
     <form ref={formRef} action={action} className="grid gap-3">
       <input type="hidden" name="requestId" value={requestId} />
       <label className="grid gap-2 text-sm text-muted">
-        Message
-        <textarea name="body" required rows={4} maxLength={4000} />
+        Répondre
+        <textarea name="body" required rows={4} maxLength={4000} placeholder="Rédiger une réponse…" />
       </label>
       <Feedback state={state} />
       <button className={buttonClass} disabled={pending}>

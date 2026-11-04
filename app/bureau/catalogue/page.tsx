@@ -28,29 +28,28 @@ async function Catalogue() {
   ]);
 
   return (
-    <div className="grid gap-14 min-[1280px]:mr-[min(0px,calc((72rem-100vw)/2+1.5rem))]">
+    <div className="grid min-w-0 gap-8">
       <PageHeader
         title="Catalogue"
         lede="Coûts de référence pour monter une mission. Les quantités ne sont pas suivies."
       />
-      <CategoryBoard
-        title="Prestations"
-        kind="service"
-        detailLabel="Description"
-        entries={services.map((item) => toEntry({ ...item, priceCents: item.basePriceCents }, item.description))}
-      />
-      <CategoryBoard
-        title="Agents"
-        kind="staff"
-        detailLabel="Note"
-        entries={staffItems.map((item) => toEntry(item, item.notes))}
-      />
-      <CategoryBoard
-        title="Matériel"
-        kind="equipment"
-        detailLabel="Note"
-        entries={equipmentItems.map((item) => toEntry(item, item.notes))}
-      />
+      <div className="mx-auto grid w-full max-w-5xl gap-10">
+        <CategoryBoard
+          title="Prestations"
+          kind="service"
+          entries={services.map((item) => toEntry({ ...item, priceCents: item.basePriceCents }, item.description))}
+        />
+        <CategoryBoard
+          title="Agents"
+          kind="staff"
+          entries={staffItems.map((item) => toEntry(item, item.notes))}
+        />
+        <CategoryBoard
+          title="Matériel"
+          kind="equipment"
+          entries={equipmentItems.map((item) => toEntry(item, item.notes))}
+        />
+      </div>
     </div>
   );
 }

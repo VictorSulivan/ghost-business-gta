@@ -39,22 +39,70 @@ export function RequestThread({
   request,
   role,
   viewerId,
-  services,
-  staffItems,
-  equipmentItems,
+  services = [],
+  staffItems = [],
+  equipmentItems = [],
   owners = [],
+  embedded = false,
 }: {
   request: RequestDetail;
   role: ViewerRole;
   viewerId: string;
-  services: { id: string; name: string; priceCents: number }[];
-  staffItems: { id: string; name: string; priceCents: number }[];
-  equipmentItems: { id: string; name: string; priceCents: number }[];
+  services?: { id: string; name: string; priceCents: number }[];
+  staffItems?: { id: string; name: string; priceCents: number }[];
+  equipmentItems?: { id: string; name: string; priceCents: number }[];
   owners?: { id: string; name: string }[];
+  embedded?: boolean;
 }) {
   const quotes = role === "client" ? request.quotes.filter((quote) => quote.status !== "draft") : request.quotes;
   const closed = isClosedRequest(request.status);
   const profile = request.client.profile;
+
+  const messages = (
+    <ol className={`grid content-start gap-3 ${embedded ? "min-h-0 flex-1 overflow-y-auto pr-1" : ""}`}>
+      {request.messages.map((message) => {
+        const mine = message.authorId === viewerId;
+        const staff =
+          message.author.role === "member" || message.author.role === "officer" || message.author.role === "admin";
+        const name = message.author.profile?.characterName ?? roleLabel(message.author.role);
+        return (
+          <li
+            key={message.id}
+            className={`max-w-[85%] border px-4 py-3 ${mine ? "ml-auto border-[#70313d] bg-accent/10" : "border-accent/30 bg-black/40"}`}
+          >
+            <p className="text-sm text-accent">
+              {staff ? "Ghost" : "Client"}
+              <span className="text-muted"> · {name}</span>
+            </p>
+            <p className="mt-2 whitespace-pre-wrap">{message.body}</p>
+            <p className="mt-2 text-xs text-muted">{formatDate(message.createdAt)}</p>
+          </li>
+        );
+      })}
+    </ol>
+  );
+
+  if (embedded) {
+    return (
+      <div className="flex h-full min-h-0 flex-1 flex-col gap-4">
+        <header className="shrink-0">
+          {request.channel ? (
+            <p className="text-xs uppercase tracking-[0.18em] text-accent">Canal permanent</p>
+          ) : null}
+          <h1 className="mt-2 font-serif text-3xl">{request.channel ? request.title : request.reference}</h1>
+          <p className="mt-2 text-sm text-muted">
+            {request.channel ? "Discussion avec les membres." : `${request.title} · ${profile?.characterName ?? "Client"}`}
+          </p>
+        </header>
+        {messages}
+        {closed ? null : (
+          <div className="shrink-0">
+            <MessageForm requestId={request.id} />
+          </div>
+        )}
+      </div>
+    );
+  }
 
   return (
     <div className="grid gap-8">
@@ -66,7 +114,7 @@ export function RequestThread({
           <h1 className="mt-2 font-serif text-4xl">{request.title}</h1>
           <p className="mt-2 text-sm text-muted">
             {request.channel
-              ? "Ce canal reste ouvert. Les échanges avec la division continuent ici."
+              ? "Discussion avec les membres."
               : `Ouverte le ${formatDate(request.createdAt)}`}
           </p>
         </div>
@@ -116,25 +164,7 @@ export function RequestThread({
 
       <section className="grid gap-3">
         <h2 className="font-serif text-2xl">Discussion</h2>
-        <ol className="grid gap-3">
-          {request.messages.map((message) => {
-            const mine = message.authorId === viewerId;
-            const name = message.author.profile?.characterName ?? roleLabel(message.author.role);
-            return (
-              <li
-                key={message.id}
-                className={`border border-accent/30 px-4 py-3 ${mine ? "bg-accent/10" : "bg-black/40"}`}
-              >
-                <p className="text-sm text-accent">
-                  {name}
-                  <span className="text-muted"> · {roleLabel(message.author.role).toLowerCase()}</span>
-                </p>
-                <p className="mt-2 whitespace-pre-wrap">{message.body}</p>
-                <p className="mt-2 text-xs text-muted">{formatDate(message.createdAt)}</p>
-              </li>
-            );
-          })}
-        </ol>
+        {messages}
         {closed ? null : <MessageForm requestId={request.id} />}
       </section>
 
